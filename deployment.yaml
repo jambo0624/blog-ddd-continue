@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-api
+spec:
+  template:
+    spec:
+      containers:
+      - name: blog-api
+        env:
+        - name: GO_ENV
+          value: "production"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: host
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        # ... 其他环境变量 
