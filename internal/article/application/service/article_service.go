@@ -1,11 +1,14 @@
 package service
 
 import (
+	"fmt"
+
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	articleRepository "github.com/jambo0624/blog/internal/article/domain/repository"
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
-	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
+	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 )
 
 type ArticleService struct {
@@ -26,26 +29,30 @@ func NewArticleService(
 	}
 }
 
-func (s *ArticleService) CreateArticle(categoryID uint, title, content string, tagIDs []uint) (*articleEntity.Article, error) {
-	// 检查分类是否存在
-	category, err := s.categoryRepo.FindByID(categoryID)
+func (s *ArticleService) Create(req *dto.CreateArticleRequest) (*articleEntity.Article, error) {
+	// 1. Get category
+	category, err := s.categoryRepo.FindByID(req.CategoryID)
+	if err != nil {
+		return nil, fmt.Errorf("category not found: %w", err)
+	}
+
+	// 2. Get tags
+	var tags []tagEntity.Tag
+	for _, tagID := range req.TagIDs {
+		tag, err := s.tagRepo.FindByID(tagID)
+		if err != nil {
+			return nil, fmt.Errorf("tag not found: %w", err)
+		}
+		tags = append(tags, *tag)
+	}
+
+	// 3. Create article using domain logic
+	article, err := articleEntity.NewArticle(category, req.Title, req.Content, tags)
 	if err != nil {
 		return nil, err
 	}
 
-	// 创建文章
-	article := articleEntity.NewArticle(category.ID, title, content)
-
-	// 添加标签
-	for _, tagID := range tagIDs {
-		tag, err := s.tagRepo.FindByID(tagID)
-		if err != nil {
-			return nil, err
-		}
-		article.AddTag(*tag)
-	}
-
-	// 保存文章
+	// 4. Save to repository
 	if err := s.articleRepo.Save(article); err != nil {
 		return nil, err
 	}
@@ -53,43 +60,41 @@ func (s *ArticleService) CreateArticle(categoryID uint, title, content string, t
 	return article, nil
 }
 
-func (s *ArticleService) GetArticleByID(id uint) (*articleEntity.Article, error) {
+func (s *ArticleService) FindByID(id uint) (*articleEntity.Article, error) {
 	return s.articleRepo.FindByID(id)
 }
 
-func (s *ArticleService) GetAllArticles() ([]*articleEntity.Article, error) {
+func (s *ArticleService) FindAll() ([]*articleEntity.Article, error) {
 	return s.articleRepo.FindAll()
 }
 
-func (s *ArticleService) UpdateArticle(id uint, categoryID uint, title, content string, tagIDs []uint) (*articleEntity.Article, error) {
-	// 获取现有文章
+func (s *ArticleService) Update(id uint, req *dto.UpdateArticleRequest) (*articleEntity.Article, error) {
+	// 1. Get article
 	article, err := s.articleRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 检查分类是否存在
-	category, err := s.categoryRepo.FindByID(categoryID)
+	// 2. Get category
+	category, err := s.categoryRepo.FindByID(req.CategoryID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("category not found: %w", err)
 	}
 
-	// 更新基本信息
-	article.CategoryID = category.ID
-	article.Title = title
-	article.Content = content
-
-	// 清除现有标签并添加新标签
-	article.Tags = []tagEntity.Tag{}
-	for _, tagID := range tagIDs {
+	// 3. Get tags
+	var tags []tagEntity.Tag
+	for _, tagID := range req.TagIDs {
 		tag, err := s.tagRepo.FindByID(tagID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("tag not found: %w", err)
 		}
-		article.AddTag(*tag)
+		tags = append(tags, *tag)
 	}
 
-	// 保存更新
+	// 4. Update using domain logic
+	article.Update(req, category, tags)
+
+	// 5. Save to repository
 	if err := s.articleRepo.Update(article); err != nil {
 		return nil, err
 	}
@@ -97,6 +102,6 @@ func (s *ArticleService) UpdateArticle(id uint, categoryID uint, title, content 
 	return article, nil
 }
 
-func (s *ArticleService) DeleteArticle(id uint) error {
+func (s *ArticleService) Delete(id uint) error {
 	return s.articleRepo.Delete(id)
 } 

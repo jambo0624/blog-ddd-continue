@@ -7,7 +7,7 @@ import (
 type CategoryRepository interface {
 	Save(category *categoryEntity.Category) error
 	FindByID(id uint) (*categoryEntity.Category, error)
-	FindBySlug(slug string) (*categoryEntity.Category, error)
+	FindAll() ([]*categoryEntity.Category, error)
 	Update(category *categoryEntity.Category) error
 	Delete(id uint) error
 }

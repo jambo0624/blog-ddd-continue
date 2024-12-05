@@ -27,13 +27,10 @@ func (r *GormCategoryRepository) FindByID(id uint) (*categoryEntity.Category, er
     return &category, nil
 }
 
-func (r *GormCategoryRepository) FindBySlug(slug string) (*categoryEntity.Category, error) {
-    var category categoryEntity.Category
-    err := r.db.Where("slug = ?", slug).First(&category).Error
-    if err != nil {
-        return nil, err
-    }
-    return &category, nil
+func (r *GormCategoryRepository) FindAll() ([]*categoryEntity.Category, error) {
+    var categories []*categoryEntity.Category
+    err := r.db.Find(&categories).Error
+    return categories, err
 }
 
 func (r *GormCategoryRepository) Update(category *categoryEntity.Category) error {

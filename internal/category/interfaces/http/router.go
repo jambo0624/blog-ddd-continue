@@ -15,9 +15,10 @@ func NewCategoryRouter(handler *CategoryHandler) *CategoryRouter {
 func (r *CategoryRouter) Register(api *gin.RouterGroup) {
 	categories := api.Group("/categories")
 	{
-		categories.POST("/", r.handler.CreateCategory)
-		categories.GET("/:id", r.handler.GetCategory)
-		categories.PUT("/:id", r.handler.UpdateCategory)
-		categories.DELETE("/:id", r.handler.DeleteCategory)
+		categories.POST("/", r.handler.Create)
+		categories.GET("/:id", r.handler.FindByID)
+		categories.GET("/", r.handler.FindAll)
+		categories.PUT("/:id", r.handler.Update)
+		categories.DELETE("/:id", r.handler.Delete)
 	}
 } 

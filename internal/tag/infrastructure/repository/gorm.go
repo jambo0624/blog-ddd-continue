@@ -27,13 +27,13 @@ func (r *GormTagRepository) FindByID(id uint) (*tagEntity.Tag, error) {
     return &tag, nil
 }
 
-func (r *GormTagRepository) FindByName(name string) (*tagEntity.Tag, error) {
-    var tag tagEntity.Tag
-    err := r.db.Where("name = ?", name).First(&tag).Error
+func (r *GormTagRepository) FindAll() ([]*tagEntity.Tag, error) {
+    var tags []*tagEntity.Tag
+    err := r.db.Find(&tags).Error
     if err != nil {
         return nil, err
     }
-    return &tag, nil
+    return tags, nil
 }
 
 func (r *GormTagRepository) Update(tag *tagEntity.Tag) error {

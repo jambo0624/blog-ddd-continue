@@ -1,9 +1,9 @@
 package service
 
 import (
-	"strings"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 )
 
 type CategoryService struct {
@@ -16,13 +16,10 @@ func NewCategoryService(cr categoryRepository.CategoryRepository) *CategoryServi
 	}
 }
 
-func (s *CategoryService) CreateCategory(name string) (*categoryEntity.Category, error) {
-	// 生成 slug
-	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-
-	category := &categoryEntity.Category{
-		Name: name,
-		Slug: slug,
+func (s *CategoryService) Create(req *dto.CreateCategoryRequest) (*categoryEntity.Category, error) {
+	category, err := categoryEntity.NewCategory(req.Name, req.Slug)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := s.categoryRepo.Save(category); err != nil {
@@ -32,18 +29,21 @@ func (s *CategoryService) CreateCategory(name string) (*categoryEntity.Category,
 	return category, nil
 }
 
-func (s *CategoryService) GetCategoryByID(id uint) (*categoryEntity.Category, error) {
+func (s *CategoryService) FindByID(id uint) (*categoryEntity.Category, error) {
 	return s.categoryRepo.FindByID(id)
 }
 
-func (s *CategoryService) UpdateCategory(id uint, name string) (*categoryEntity.Category, error) {
+func (s *CategoryService) FindAll() ([]*categoryEntity.Category, error) {
+	return s.categoryRepo.FindAll()
+}
+
+func (s *CategoryService) Update(id uint, req *dto.UpdateCategoryRequest) (*categoryEntity.Category, error) {
 	category, err := s.categoryRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	category.Name = name
-	category.Slug = strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	category.Update(req)
 
 	if err := s.categoryRepo.Update(category); err != nil {
 		return nil, err
@@ -52,6 +52,6 @@ func (s *CategoryService) UpdateCategory(id uint, name string) (*categoryEntity.
 	return category, nil
 }
 
-func (s *CategoryService) DeleteCategory(id uint) error {
+func (s *CategoryService) Delete(id uint) error {
 	return s.categoryRepo.Delete(id)
 }

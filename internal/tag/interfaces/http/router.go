@@ -15,9 +15,10 @@ func NewTagRouter(handler *TagHandler) *TagRouter {
 func (r *TagRouter) Register(api *gin.RouterGroup) {
 	tags := api.Group("/tags")
 	{
-		tags.POST("/", r.handler.CreateTag)
-		tags.GET("/:id", r.handler.GetTag)
-		tags.PUT("/:id", r.handler.UpdateTag)
-		tags.DELETE("/:id", r.handler.DeleteTag)
+		tags.POST("/", r.handler.Create)
+		tags.GET("/:id", r.handler.FindByID)
+		tags.GET("/", r.handler.FindAll)
+		tags.PUT("/:id", r.handler.Update)
+		tags.DELETE("/:id", r.handler.Delete)
 	}
 } 

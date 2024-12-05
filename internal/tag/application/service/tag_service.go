@@ -3,6 +3,7 @@ package service
 import (
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
+	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
 )
 
 type TagService struct {
@@ -15,10 +16,10 @@ func NewTagService(tr tagRepository.TagRepository) *TagService {
 	}
 }
 
-func (s *TagService) CreateTag(name string, color string) (*tagEntity.Tag, error) {
-	tag := &tagEntity.Tag{
-		Name:  name,
-		Color: color,
+func (s *TagService) Create(req *dto.CreateTagRequest) (*tagEntity.Tag, error) {
+	tag, err := tagEntity.NewTag(req.Name, req.Color)
+	if err != nil {
+		return nil, err
 	}
 	
 	if err := s.tagRepo.Save(tag); err != nil {
@@ -28,18 +29,21 @@ func (s *TagService) CreateTag(name string, color string) (*tagEntity.Tag, error
 	return tag, nil
 }
 
-func (s *TagService) GetTagByID(id uint) (*tagEntity.Tag, error) {
+func (s *TagService) FindByID(id uint) (*tagEntity.Tag, error) {
 	return s.tagRepo.FindByID(id)
 }
 
-func (s *TagService) UpdateTag(id uint, name string, color string) (*tagEntity.Tag, error) {
+func (s *TagService) FindAll() ([]*tagEntity.Tag, error) {
+	return s.tagRepo.FindAll()
+}
+
+func (s *TagService) Update(id uint, req *dto.UpdateTagRequest) (*tagEntity.Tag, error) {
 	tag, err := s.tagRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 	
-	tag.Name = name
-	tag.Color = color
+	tag.Update(req)
 	
 	if err := s.tagRepo.Update(tag); err != nil {
 		return nil, err
@@ -48,6 +52,6 @@ func (s *TagService) UpdateTag(id uint, name string, color string) (*tagEntity.T
 	return tag, nil
 }
 
-func (s *TagService) DeleteTag(id uint) error {
+func (s *TagService) Delete(id uint) error {
 	return s.tagRepo.Delete(id)
 }

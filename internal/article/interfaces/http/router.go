@@ -15,10 +15,10 @@ func NewArticleRouter(handler *ArticleHandler) *ArticleRouter {
 func (r *ArticleRouter) Register(api *gin.RouterGroup) {
 	articles := api.Group("/articles")
 	{
-		articles.POST("/", r.handler.CreateArticle)
-		articles.GET("/", r.handler.GetAllArticles)
-		articles.GET("/:id", r.handler.GetArticle)
-		articles.PUT("/:id", r.handler.UpdateArticle)
-		articles.DELETE("/:id", r.handler.DeleteArticle)
+		articles.POST("/", r.handler.Create)
+		articles.GET("/", r.handler.FindAll)
+		articles.GET("/:id", r.handler.FindByID)
+		articles.PUT("/:id", r.handler.Update)
+		articles.DELETE("/:id", r.handler.Delete)
 	}
 } 
