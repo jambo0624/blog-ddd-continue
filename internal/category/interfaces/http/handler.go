@@ -1,9 +1,6 @@
 package http
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	categoryService "github.com/jambo0624/blog/internal/category/application/service"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
@@ -27,20 +24,16 @@ func NewCategoryHandler(cs *categoryService.CategoryService) *CategoryHandler {
 
 func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQuery, error) {
 	q := categoryQuery.NewCategoryQuery()
-	// Parse IDs
-	if ids := c.QueryArray("ids"); len(ids) > 0 {
-		uintIDs := make([]uint, 0, len(ids))
-		for _, id := range ids {
-			uid, err := strconv.ParseUint(id, 10, 32)
-			if err != nil {
-				return nil, query.ErrInvalidIDFormat
-			}
-			uintIDs = append(uintIDs, uint(uid))
-		}
-		q.WithIDs(uintIDs)
+	builder := http.NewBaseQueryBuilder()
+
+	// Build IDs
+	if ids, err := builder.BuildIDs(c); err != nil {
+		return nil, err
+	} else if ids != nil {
+		q.WithIDs(ids)
 	}
     
-	// Parse name search
+	// Parse name
 	if name := c.Query("name"); name != "" {
 		if len(name) > 100 {
 			return nil, query.ErrNameTooLong
@@ -48,7 +41,7 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
 		q.WithNameLike(name)
 	}
     
-	// Parse slug search
+	// Parse slug
 	if slug := c.Query("slug"); slug != "" {
 		if len(slug) > 100 {
 			return nil, query.ErrSlugTooLong
@@ -56,41 +49,20 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
 		q.WithSlugLike(slug)
 	}
     
-	// Parse pagination
-	if limitStr := c.Query("limit"); limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil || limit < 0 {
-			return nil, query.ErrInvalidLimit
-		}
-		if limit > 100 { // Set max limit
-			limit = 100
-		}
-		q.WithPagination(limit, q.Offset)
+	// Build pagination
+	if limit, offset, err := builder.BuildPagination(c, q.Limit, q.Offset); err != nil {
+		return nil, err
+	} else {
+		q.WithPagination(limit, offset)
 	}
-    
-	if offsetStr := c.Query("offset"); offsetStr != "" {
-		offset, err := strconv.Atoi(offsetStr)
-		if err != nil || offset < 0 {
-			return nil, query.ErrInvalidOffset
-		}
-		q.WithPagination(q.Limit, offset)
-	}
-    
-	// Parse ordering
-	if orderBy := c.Query("order_by"); orderBy != "" {
-		allowedFields := map[string]bool{
-			"id":         true,
-			"name":       true,
-			"slug":       true,
-			"created_at": true,
-			"updated_at": true,
-		}
-        
-		field := strings.TrimSuffix(strings.TrimPrefix(orderBy, "-"), " DESC")
-		if !allowedFields[field] {
-			return nil, query.ErrInvalidOrderByField
-		}
-        
+
+	// Build order by
+	if orderBy, err := builder.BuildOrderBy(c, map[string]bool{
+		"name": true,
+		"slug": true,
+	}); err != nil {
+		return nil, err
+	} else if orderBy != "" {
 		q.WithOrderBy(orderBy)
 	}
 

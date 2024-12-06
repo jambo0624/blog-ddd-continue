@@ -1,9 +1,6 @@
 package http
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/tag/domain/entity"
@@ -26,66 +23,38 @@ func NewTagHandler(s *service.TagService) *TagHandler {
 
 // Only need to implement buildQuery method
 func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
-	// create new query
 	q := tagQuery.NewTagQuery()
+	builder := http.NewBaseQueryBuilder()
 
-	// Parse IDs
-	if ids := c.QueryArray("ids"); len(ids) > 0 {
-		uintIDs := make([]uint, 0, len(ids))
-		for _, id := range ids {
-			uid, err := strconv.ParseUint(id, 10, 32)
-			if err != nil {
-				return nil, query.ErrInvalidIDFormat
-			}
-			uintIDs = append(uintIDs, uint(uid))
-		}
-		q.WithIDs(uintIDs)
+	// Build IDs
+	if ids, err := builder.BuildIDs(c); err != nil {
+		return nil, err
+	} else if ids != nil {
+		q.WithIDs(ids)
 	}
-	
-	// Parse name like
+
+	// Parse name
 	if name := c.Query("name"); name != "" {
-		// Add name validation rule
 		if len(name) > 100 {
 			return nil, query.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}
-	
-	// Parse pagination
-	if limitStr := c.Query("limit"); limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil || limit < 0 {
-			return nil, query.ErrInvalidLimit
-		}
-		if limit > 100 { // Set max limit
-			limit = 100
-		}
-		q.WithPagination(limit, q.Offset)
-	}
-	
-	if offsetStr := c.Query("offset"); offsetStr != "" {
-		offset, err := strconv.Atoi(offsetStr)
-		if err != nil || offset < 0 {
-			return nil, query.ErrInvalidOffset
-		}
-		q.WithPagination(q.Limit, offset)
+
+	// Build pagination
+	if limit, offset, err := builder.BuildPagination(c, q.Limit, q.Offset); err != nil {
+		return nil, err
+	} else {
+		q.WithPagination(limit, offset)
 	}
 
-	// Parse ordering
-	if orderBy := c.Query("order_by"); orderBy != "" {
-		// Validate order field
-		allowedFields := map[string]bool{
-			"id":         true,
-			"name":       true,
-			"created_at": true,
-			"updated_at": true,
-		}
-		
-		field := strings.TrimSuffix(strings.TrimPrefix(orderBy, "-"), " DESC")
-		if !allowedFields[field] {
-			return nil, query.ErrInvalidOrderByField
-		}
-		
+	// Build order by
+	if orderBy, err := builder.BuildOrderBy(c, map[string]bool{
+		"name": true,
+		// Add other Tag specific fields
+	}); err != nil {
+		return nil, err
+	} else if orderBy != "" {
 		q.WithOrderBy(orderBy)
 	}
 

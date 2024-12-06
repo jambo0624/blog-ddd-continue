@@ -1,17 +1,17 @@
 package repository
 
 type Entity interface {
-    GetID() uint
+	GetID() uint
 }
 
 type Query interface {
-    Validate() error
+	Validate() error
 }
 
 type BaseRepository[T Entity, Q Query] interface {
-    Save(entity *T) error
-    FindByID(id uint) (*T, error)
-    FindAll(query Q) ([]*T, error)
-    Update(entity *T) error
-    Delete(id uint) error
+	Save(entity *T) error
+	FindByID(id uint) (*T, error)
+	FindAll(query Q) ([]*T, error)
+	Update(entity *T) error
+	Delete(id uint) error
 }
