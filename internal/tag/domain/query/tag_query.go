@@ -1,42 +1,39 @@
 package query
 
+import (
+    baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
+)
+
 type TagQuery struct {
-    IDs        []uint  // for IN query
-    NameLike   string  // for LIKE query
-    Limit      int     // for pagination
-    Offset     int     // for pagination
-    OrderBy    string  // for sorting
+    baseQuery.BaseQuery
+    NameLike string  // tag specific field
+    ColorLike string // tag specific field
 }
 
-// NewTagQuery creates a new query with default values
 func NewTagQuery() *TagQuery {
     return &TagQuery{
-        Limit:  10,    // default limit
-        Offset: 0,
+        BaseQuery: baseQuery.NewBaseQuery(),
     }
 }
 
-// WithIDs adds IN condition
-func (q *TagQuery) WithIDs(ids []uint) *TagQuery {
-    q.IDs = ids
-    return q
-}
-
-// WithNameLike adds LIKE condition
 func (q *TagQuery) WithNameLike(name string) *TagQuery {
     q.NameLike = name
     return q
 }
 
-// WithPagination adds pagination
-func (q *TagQuery) WithPagination(limit, offset int) *TagQuery {
-    q.Limit = limit
-    q.Offset = offset
+func (q *TagQuery) WithColorLike(color string) *TagQuery {
+    q.ColorLike = color
     return q
 }
 
-// WithOrderBy adds sorting
-func (q *TagQuery) WithOrderBy(orderBy string) *TagQuery {
-    q.OrderBy = orderBy
-    return q
+// override the base class validation method
+// add specific validation rules
+func (q *TagQuery) Validate() error {
+    if err := q.BaseQuery.Validate(); err != nil {
+        return err
+    }
+    if len(q.NameLike) > 100 {
+        return baseQuery.ErrNameTooLong
+    }
+    return nil
 } 

@@ -41,4 +41,9 @@ func (c *Category) Update(req *dto.UpdateCategoryRequest) {
         c.Slug = req.Slug
     }
     c.UpdatedAt = time.Now()
+}
+
+// GetID get category id, implement Entity interface
+func (c Category) GetID() uint {
+    return c.ID
 } 

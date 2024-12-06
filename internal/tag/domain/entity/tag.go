@@ -33,6 +33,11 @@ func NewTag(name, color string) (*Tag, error) {
 	}, nil
 }
 
+// GetID get tag id, implement Entity interface
+func (t Tag) GetID() uint {
+	return t.ID
+}
+
 // Update update tag, only update provided fields
 func (t *Tag) Update(req *dto.UpdateTagRequest) {
 	if req.Name != "" {

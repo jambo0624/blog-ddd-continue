@@ -69,3 +69,8 @@ func (a *Article) Update(req *dto.UpdateArticleRequest, category *categoryEntity
 	}
 	a.UpdatedAt = time.Now()
 }
+
+// GetID get article id, implement Entity interface
+func (a Article) GetID() uint {
+	return a.ID
+}

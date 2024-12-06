@@ -1,14 +1,11 @@
 package repository
 
 import (
+	"github.com/jambo0624/blog/internal/shared/domain/repository"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
-	"github.com/jambo0624/blog/internal/article/domain/query"
+	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 )
 
 type ArticleRepository interface {
-	Save(article *articleEntity.Article) error
-	FindByID(id uint) (*articleEntity.Article, error)
-	Update(article *articleEntity.Article) error
-	Delete(id uint) error
-	FindAll(q *query.ArticleQuery) ([]*articleEntity.Article, error)
+	repository.BaseRepository[articleEntity.Article, *articleQuery.ArticleQuery]
 }

@@ -1,24 +1,19 @@
 package query
 
+import (
+    baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
+)
+
 type CategoryQuery struct {
-    IDs       []uint  // for IN query
-    NameLike  string  // for name search
-    SlugLike  string  // for slug search
-    Limit     int     // for pagination
-    Offset    int     // for pagination
-    OrderBy   string  // for sorting
+    baseQuery.BaseQuery
+    NameLike string  // category specific field
+    SlugLike string  // category specific field
 }
 
 func NewCategoryQuery() *CategoryQuery {
     return &CategoryQuery{
-        Limit:  10,
-        Offset: 0,
+        BaseQuery: baseQuery.NewBaseQuery(),
     }
-}
-
-func (q *CategoryQuery) WithIDs(ids []uint) *CategoryQuery {
-    q.IDs = ids
-    return q
 }
 
 func (q *CategoryQuery) WithNameLike(name string) *CategoryQuery {
@@ -31,13 +26,12 @@ func (q *CategoryQuery) WithSlugLike(slug string) *CategoryQuery {
     return q
 }
 
-func (q *CategoryQuery) WithPagination(limit, offset int) *CategoryQuery {
-    q.Limit = limit
-    q.Offset = offset
-    return q
-}
-
-func (q *CategoryQuery) WithOrderBy(orderBy string) *CategoryQuery {
-    q.OrderBy = orderBy
-    return q
+func (q *CategoryQuery) Validate() error {
+    if err := q.BaseQuery.Validate(); err != nil {
+        return err
+    }
+    if len(q.NameLike) > 100 {
+        return baseQuery.ErrNameTooLong
+    }
+    return nil
 } 

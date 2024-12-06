@@ -1,26 +1,21 @@
 package query
 
+import (
+    baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
+)
+
 type ArticleQuery struct {
-    IDs         []uint  // for IN query
-    CategoryID  *uint   // for category filter
-    TagIDs      []uint  // for tag filter
-    TitleLike   string  // for title search
-    ContentLike string  // for content search
-    Limit       int     // for pagination
-    Offset      int     // for pagination
-    OrderBy     string  // for sorting
+    baseQuery.BaseQuery
+    CategoryID  *uint   // article specific field
+    TagIDs      []uint  // article specific field
+    TitleLike   string  // article specific field
+    ContentLike string  // article specific field
 }
 
 func NewArticleQuery() *ArticleQuery {
     return &ArticleQuery{
-        Limit:  10,
-        Offset: 0,
+        BaseQuery: baseQuery.NewBaseQuery(),
     }
-}
-
-func (q *ArticleQuery) WithIDs(ids []uint) *ArticleQuery {
-    q.IDs = ids
-    return q
 }
 
 func (q *ArticleQuery) WithCategoryID(id uint) *ArticleQuery {
@@ -43,13 +38,15 @@ func (q *ArticleQuery) WithContentLike(content string) *ArticleQuery {
     return q
 }
 
-func (q *ArticleQuery) WithPagination(limit, offset int) *ArticleQuery {
-    q.Limit = limit
-    q.Offset = offset
-    return q
-}
-
-func (q *ArticleQuery) WithOrderBy(orderBy string) *ArticleQuery {
-    q.OrderBy = orderBy
-    return q
+func (q *ArticleQuery) Validate() error {
+    if err := q.BaseQuery.Validate(); err != nil {
+        return err
+    }
+    if len(q.TitleLike) > 255 {
+        return baseQuery.ErrTitleTooLong
+    }
+    if len(q.ContentLike) > 1000 {
+        return baseQuery.ErrContentTooLong
+    }
+    return nil
 } 
