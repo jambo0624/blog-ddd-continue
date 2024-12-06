@@ -5,6 +5,7 @@ import (
 	"github.com/jambo0624/blog/internal/shared/domain/query"
 	"strconv"
 	"strings"
+	"github.com/jambo0624/blog/internal/shared/domain/constants"
 )
 
 // BaseQueryBuilder handles common query parameters
@@ -49,8 +50,8 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 		if err != nil || l < 0 {
 			return 0, 0, query.ErrInvalidLimit
 		}
-		if l > 100 {
-			l = 100
+		if l > constants.MaxPageSize {
+			l = constants.MaxPageSize
 		}
 		limit = l
 	}

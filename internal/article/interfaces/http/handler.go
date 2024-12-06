@@ -7,6 +7,7 @@ import (
 	articleService "github.com/jambo0624/blog/internal/article/application/service"
 	sharedHttp "github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
+	"github.com/jambo0624/blog/internal/shared/domain/constants"
 	"github.com/jambo0624/blog/internal/shared/domain/query"
 	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
@@ -58,7 +59,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 
 	// Parse title search
 	if title := c.Query("title"); title != "" {
-		if len(title) > 255 {
+		if len(title) > constants.MaxNameLength {
 			return nil, query.ErrTitleTooLong
 		}
 		q.WithTitleLike(title)
@@ -66,7 +67,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 
 	// Parse content search
 	if content := c.Query("content"); content != "" {
-		if len(content) > 1000 {
+		if len(content) > constants.MaxContentLength {
 			return nil, query.ErrContentTooLong
 		}
 		q.WithContentLike(content)

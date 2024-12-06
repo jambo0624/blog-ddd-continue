@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	categoryService "github.com/jambo0624/blog/internal/category/application/service"
+	"github.com/jambo0624/blog/internal/shared/domain/constants"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 	"github.com/jambo0624/blog/internal/shared/domain/query"
@@ -35,7 +36,7 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
     
 	// Parse name
 	if name := c.Query("name"); name != "" {
-		if len(name) > 100 {
+		if len(name) > constants.MaxNameLength {
 			return nil, query.ErrNameTooLong
 		}
 		q.WithNameLike(name)
@@ -43,7 +44,7 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
     
 	// Parse slug
 	if slug := c.Query("slug"); slug != "" {
-		if len(slug) > 100 {
+		if len(slug) > constants.MaxSlugLength {
 			return nil, query.ErrSlugTooLong
 		}
 		q.WithSlugLike(slug)
