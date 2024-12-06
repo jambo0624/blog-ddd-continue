@@ -1,61 +1,48 @@
 package service
 
 import (
-	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
-	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	"github.com/jambo0624/blog/internal/shared/application/service"
+	"github.com/jambo0624/blog/internal/category/domain/entity"
 	"github.com/jambo0624/blog/internal/category/domain/query"
 	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
+	"github.com/jambo0624/blog/internal/shared/domain/repository"
 )
 
 type CategoryService struct {
-	categoryRepo categoryRepository.CategoryRepository
+	*service.BaseService[entity.Category, *query.CategoryQuery]
 }
 
-func NewCategoryService(cr categoryRepository.CategoryRepository) *CategoryService {
+func NewCategoryService(repo repository.BaseRepository[entity.Category, *query.CategoryQuery]) *CategoryService {
+	baseService := service.NewBaseService(repo)
 	return &CategoryService{
-		categoryRepo: cr,
+		BaseService: baseService,
 	}
 }
 
-func (s *CategoryService) Create(req *dto.CreateCategoryRequest) (*categoryEntity.Category, error) {
-	category, err := categoryEntity.NewCategory(req.Name, req.Slug)
+func (s *CategoryService) Create(req *dto.CreateCategoryRequest) (*entity.Category, error) {
+	category, err := entity.NewCategory(req.Name, req.Slug)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.categoryRepo.Save(category); err != nil {
+	if err := s.Repo.Save(category); err != nil {
 		return nil, err
 	}
 
 	return category, nil
 }
 
-func (s *CategoryService) FindByID(id uint) (*categoryEntity.Category, error) {
-	return s.categoryRepo.FindByID(id)
-}
-
-func (s *CategoryService) FindAll(q *query.CategoryQuery) ([]*categoryEntity.Category, error) {
-	if q == nil {
-		q = query.NewCategoryQuery()
-	}
-	return s.categoryRepo.FindAll(q)
-}
-
-func (s *CategoryService) Update(id uint, req *dto.UpdateCategoryRequest) (*categoryEntity.Category, error) {
-	category, err := s.categoryRepo.FindByID(id)
+func (s *CategoryService) Update(id uint, req *dto.UpdateCategoryRequest) (*entity.Category, error) {
+	category, err := s.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 
 	category.Update(req)
 
-	if err := s.categoryRepo.Update(category); err != nil {
+	if err := s.Repo.Update(category); err != nil {
 		return nil, err
 	}
 
 	return category, nil
-}
-
-func (s *CategoryService) Delete(id uint) error {
-	return s.categoryRepo.Delete(id)
 }

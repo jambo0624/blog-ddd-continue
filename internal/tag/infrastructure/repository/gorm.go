@@ -1,14 +1,14 @@
 package persistence
 
 import (
-    "gorm.io/gorm"
-    tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
-    tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-    tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
+	"gorm.io/gorm"
+	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
+	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 )
 
 type GormTagRepository struct {
-    db *gorm.DB
+	db *gorm.DB
 }
 
 func NewGormTagRepository(db *gorm.DB) tagRepository.TagRepository {
