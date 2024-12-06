@@ -4,6 +4,7 @@ import (
     "gorm.io/gorm"
     categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
     categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+    categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 )
 
 type GormCategoryRepository struct {
@@ -27,10 +28,39 @@ func (r *GormCategoryRepository) FindByID(id uint) (*categoryEntity.Category, er
     return &category, nil
 }
 
-func (r *GormCategoryRepository) FindAll() ([]*categoryEntity.Category, error) {
+func (r *GormCategoryRepository) FindAll(q *categoryQuery.CategoryQuery) ([]*categoryEntity.Category, error) {
     var categories []*categoryEntity.Category
-    err := r.db.Find(&categories).Error
-    return categories, err
+    db := r.db
+
+    // Apply filters
+    if len(q.IDs) > 0 {
+        db = db.Where("id IN ?", q.IDs)
+    }
+    if q.NameLike != "" {
+        db = db.Where("name LIKE ?", "%"+q.NameLike+"%")
+    }
+    if q.SlugLike != "" {
+        db = db.Where("slug LIKE ?", "%"+q.SlugLike+"%")
+    }
+
+    // Apply pagination
+    if q.Limit > 0 {
+        db = db.Limit(q.Limit)
+    }
+    if q.Offset > 0 {
+        db = db.Offset(q.Offset)
+    }
+
+    // Apply sorting
+    if q.OrderBy != "" {
+        db = db.Order(q.OrderBy)
+    }
+
+    err := db.Find(&categories).Error
+    if err != nil {
+        return nil, err
+    }
+    return categories, nil
 }
 
 func (r *GormCategoryRepository) Update(category *categoryEntity.Category) error {

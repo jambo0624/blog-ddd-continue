@@ -8,6 +8,7 @@ import (
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	"github.com/jambo0624/blog/internal/article/domain/query"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 )
 
@@ -64,8 +65,11 @@ func (s *ArticleService) FindByID(id uint) (*articleEntity.Article, error) {
 	return s.articleRepo.FindByID(id)
 }
 
-func (s *ArticleService) FindAll() ([]*articleEntity.Article, error) {
-	return s.articleRepo.FindAll()
+func (s *ArticleService) FindAll(q *query.ArticleQuery) ([]*articleEntity.Article, error) {
+	if q == nil {
+		q = query.NewArticleQuery()
+	}
+	return s.articleRepo.FindAll(q)
 }
 
 func (s *ArticleService) Update(id uint, req *dto.UpdateArticleRequest) (*articleEntity.Article, error) {

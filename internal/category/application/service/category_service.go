@@ -3,6 +3,7 @@ package service
 import (
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	"github.com/jambo0624/blog/internal/category/domain/query"
 	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 )
 
@@ -33,8 +34,11 @@ func (s *CategoryService) FindByID(id uint) (*categoryEntity.Category, error) {
 	return s.categoryRepo.FindByID(id)
 }
 
-func (s *CategoryService) FindAll() ([]*categoryEntity.Category, error) {
-	return s.categoryRepo.FindAll()
+func (s *CategoryService) FindAll(q *query.CategoryQuery) ([]*categoryEntity.Category, error) {
+	if q == nil {
+		q = query.NewCategoryQuery()
+	}
+	return s.categoryRepo.FindAll(q)
 }
 
 func (s *CategoryService) Update(id uint, req *dto.UpdateCategoryRequest) (*categoryEntity.Category, error) {
