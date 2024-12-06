@@ -1,63 +1,41 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	tagService "github.com/jambo0624/blog/internal/tag/application/service"
-	"github.com/jambo0624/blog/internal/tag/domain/query"
-	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
-	sharedHttp "github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jambo0624/blog/internal/shared/interfaces/http"
+	"github.com/jambo0624/blog/internal/tag/domain/entity"
+	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
+	"github.com/jambo0624/blog/internal/shared/domain/query"
+	"github.com/jambo0624/blog/internal/tag/application/service"
+	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
 )
 
 type TagHandler struct {
-	service *tagService.TagService
+	*http.BaseHandler[entity.Tag, *tagQuery.TagQuery, dto.CreateTagRequest, dto.UpdateTagRequest]
 }
 
-func NewTagHandler(ts *tagService.TagService) *TagHandler {
+func NewTagHandler(s *service.TagService) *TagHandler {
+	baseHandler := http.NewBaseHandler(s.BaseService, s)
 	return &TagHandler{
-		service: ts,
+		BaseHandler: baseHandler,
 	}
 }
 
-func (h *TagHandler) Create(c *gin.Context) {
-	var req dto.CreateTagRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
+// Only need to implement buildQuery method
+func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
+	// create new query
+	q := tagQuery.NewTagQuery()
 
-	tag, err := h.service.Create(&req)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(201, tag)
-}
-
-func (h *TagHandler) FindByID(c *gin.Context) {
-	id := sharedHttp.ParseUintParam(c, "id")
-	tag, err := h.service.FindByID(id)
-	if err != nil {
-		c.JSON(404, gin.H{"error": "Tag not found"})
-		return
-	}
-	c.JSON(200, tag)
-}
-
-func (h *TagHandler) FindAll(c *gin.Context) {
-	// Create query object
-	q := query.NewTagQuery()
-	
 	// Parse IDs
 	if ids := c.QueryArray("ids"); len(ids) > 0 {
 		uintIDs := make([]uint, 0, len(ids))
 		for _, id := range ids {
 			uid, err := strconv.ParseUint(id, 10, 32)
 			if err != nil {
-				c.JSON(400, gin.H{"error": "invalid id format"})
-				return
+				return nil, query.ErrInvalidIDFormat
 			}
 			uintIDs = append(uintIDs, uint(uid))
 		}
@@ -68,8 +46,7 @@ func (h *TagHandler) FindAll(c *gin.Context) {
 	if name := c.Query("name"); name != "" {
 		// Add name validation rule
 		if len(name) > 100 {
-			c.JSON(400, gin.H{"error": "name too long"})
-			return
+			return nil, query.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}
@@ -78,8 +55,7 @@ func (h *TagHandler) FindAll(c *gin.Context) {
 	if limitStr := c.Query("limit"); limitStr != "" {
 		limit, err := strconv.Atoi(limitStr)
 		if err != nil || limit < 0 {
-			c.JSON(400, gin.H{"error": "invalid limit"})
-			return
+			return nil, query.ErrInvalidLimit
 		}
 		if limit > 100 { // Set max limit
 			limit = 100
@@ -90,12 +66,11 @@ func (h *TagHandler) FindAll(c *gin.Context) {
 	if offsetStr := c.Query("offset"); offsetStr != "" {
 		offset, err := strconv.Atoi(offsetStr)
 		if err != nil || offset < 0 {
-			c.JSON(400, gin.H{"error": "invalid offset"})
-			return
+			return nil, query.ErrInvalidOffset
 		}
 		q.WithPagination(q.Limit, offset)
 	}
-	
+
 	// Parse ordering
 	if orderBy := c.Query("order_by"); orderBy != "" {
 		// Validate order field
@@ -108,53 +83,16 @@ func (h *TagHandler) FindAll(c *gin.Context) {
 		
 		field := strings.TrimSuffix(strings.TrimPrefix(orderBy, "-"), " DESC")
 		if !allowedFields[field] {
-			c.JSON(400, gin.H{"error": "invalid order field"})
-			return
+			return nil, query.ErrInvalidOrderByField
 		}
 		
 		q.WithOrderBy(orderBy)
 	}
 
-	// Execute query
-	tags, err := h.service.FindAll(q)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Return result
-	c.JSON(200, gin.H{
-		"data": tags,
-		"meta": gin.H{
-			"limit":  q.Limit,
-			"offset": q.Offset,
-			"total":  len(tags), // In actual application, it may need to query total separately
-		},
-	})
+	return q, nil
 }
 
-func (h *TagHandler) Update(c *gin.Context) {
-	id := sharedHttp.ParseUintParam(c, "id")
-	var req dto.UpdateTagRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	tag, err := h.service.Update(id, &req)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(200, tag)
+// FindAll overrides BaseHandler.FindAll to use buildQuery
+func (h *TagHandler) FindAll(c *gin.Context) {
+	h.BaseHandler.FindAll(c, h.buildQuery)
 }
-
-func (h *TagHandler) Delete(c *gin.Context) {
-	id := sharedHttp.ParseUintParam(c, "id")
-	if err := h.service.Delete(id); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(204, nil)
-} 
