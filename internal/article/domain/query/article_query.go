@@ -5,6 +5,7 @@ import (
 
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 )
 
 // Preload constants for Article queries
@@ -54,7 +55,7 @@ func (q *ArticleQuery) Validate() error {
 		return err
 	}
 	if len(q.TitleLike) > constants.MaxTitleLength {
-		return baseQuery.ErrTitleTooLong
+		return validate.ErrTitleTooLong
 	}
 	return nil
 }

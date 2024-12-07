@@ -8,7 +8,7 @@ import (
 	sharedHttp "github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/query"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http/response"
@@ -40,7 +40,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 	if categoryID := c.Query("category_id"); categoryID != "" {
 		uid, err := strconv.ParseUint(categoryID, 10, 32)
 		if err != nil {
-			return nil, query.ErrInvalidIDFormat
+			return nil, validate.ErrInvalidIDFormat
 		}
 		q.WithCategoryID(uint(uid))
 	}
@@ -51,7 +51,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 		for _, id := range tagIDs {
 			uid, err := strconv.ParseUint(id, 10, 32)
 			if err != nil {
-				return nil, query.ErrInvalidIDFormat
+				return nil, validate.ErrInvalidIDFormat
 			}
 			uintIDs = append(uintIDs, uint(uid))
 		}
@@ -61,7 +61,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 	// Parse title search
 	if title := c.Query("title"); title != "" {
 		if len(title) > constants.MaxNameLength {
-			return nil, query.ErrTitleTooLong
+			return nil, validate.ErrTitleTooLong
 		}
 		q.WithTitleLike(title)
 	}
@@ -69,7 +69,7 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 	// Parse content search
 	if content := c.Query("content"); content != "" {
 		if len(content) > constants.MaxContentLength {
-			return nil, query.ErrContentTooLong
+			return nil, validate.ErrContentTooLong
 		}
 		q.WithContentLike(content)
 	}

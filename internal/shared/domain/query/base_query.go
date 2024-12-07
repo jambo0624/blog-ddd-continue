@@ -1,6 +1,9 @@
 package query
 
-import "github.com/jambo0624/blog/internal/shared/domain/constants"
+import (
+	"github.com/jambo0624/blog/internal/shared/domain/constants"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
+)
 
 // BaseQuery base query struct
 type BaseQuery struct {
@@ -42,10 +45,10 @@ func (q *BaseQuery) WithOrderBy(orderBy string) *BaseQuery {
 // Validate validate the query parameters
 func (q *BaseQuery) Validate() error {
 	if q.Limit < 0 {
-		return ErrInvalidLimit
+		return validate.ErrInvalidLimit
 	}
 	if q.Offset < 0 {
-		return ErrInvalidOffset
+		return validate.ErrInvalidOffset
 	}
 	return nil
 }

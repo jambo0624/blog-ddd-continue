@@ -1,11 +1,11 @@
 package entity
 
 import (
-	"fmt"
 	"time"
 
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 )
 
@@ -23,13 +23,13 @@ type Article struct {
 
 func NewArticle(category *categoryEntity.Category, title, content string, tags []tagEntity.Tag) (*Article, error) {
 	if category == nil {
-		return nil, fmt.Errorf("category is required")
+		return nil, validate.ErrCategoryRequired
 	}
 	if title == "" {
-		return nil, fmt.Errorf("title is required")
+		return nil, validate.ErrTitleRequired
 	}
 	if content == "" {
-		return nil, fmt.Errorf("content is required")
+		return nil, validate.ErrContentRequired
 	}
 
 	return &Article{
@@ -46,7 +46,7 @@ func NewArticle(category *categoryEntity.Category, title, content string, tags [
 func (a *Article) AddTag(tag tagEntity.Tag) error {
 	for _, existingTag := range a.Tags {
 		if existingTag.ID == tag.ID {
-			return fmt.Errorf("tag already exists")
+			return validate.ErrTagAlreadyExists
 		}
 	}
 	a.Tags = append(a.Tags, tag)

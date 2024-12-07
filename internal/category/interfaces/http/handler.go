@@ -6,7 +6,7 @@ import (
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
-	"github.com/jambo0624/blog/internal/shared/domain/query"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 )
@@ -36,7 +36,7 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
 	// Parse name
 	if name := c.Query("name"); name != "" {
 		if len(name) > constants.MaxNameLength {
-			return nil, query.ErrNameTooLong
+			return nil, validate.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}
@@ -44,7 +44,7 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
 	// Parse slug
 	if slug := c.Query("slug"); slug != "" {
 		if len(slug) > constants.MaxSlugLength {
-			return nil, query.ErrSlugTooLong
+			return nil, validate.ErrSlugTooLong
 		}
 		q.WithSlugLike(slug)
 	}

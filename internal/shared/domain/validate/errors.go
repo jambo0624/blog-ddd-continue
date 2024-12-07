@@ -1,4 +1,4 @@
-package query
+package validate
 
 import "errors"
 
@@ -10,6 +10,9 @@ var (
 	ErrTitleRequired = errors.New("title is required")
 	ErrTitleTooLong = errors.New("title too long")
 
+	// Category
+	ErrCategoryRequired = errors.New("category is required")
+
 	// Content
 	ErrContentRequired = errors.New("content is required")
 	ErrContentTooLong = errors.New("content too long")
@@ -17,6 +20,9 @@ var (
 	// Name
 	ErrNameRequired = errors.New("name is required")
 	ErrNameTooLong = errors.New("name too long")
+
+	// Tag
+	ErrTagAlreadyExists = errors.New("tag already exists")
 
 	// Slug
 	ErrSlugRequired = errors.New("slug is required")

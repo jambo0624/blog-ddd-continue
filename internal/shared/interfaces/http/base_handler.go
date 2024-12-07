@@ -4,26 +4,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jambo0624/blog/internal/shared/application/service"
 	"github.com/jambo0624/blog/internal/shared/domain/repository"
+	"github.com/jambo0624/blog/internal/shared/interfaces/http/dto"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http/response"
 )
 
-// RequestDTO interface for create/update requests
-type RequestDTO interface {
-	Validate() error
-}
-
 // EntityService interface for create/update operations
-type EntityService[T repository.Entity, Q repository.Query, C RequestDTO, U RequestDTO] interface {
+type EntityService[T repository.Entity, Q repository.Query, C dto.RequestDTO, U dto.RequestDTO] interface {
 	Create(req *C) (*T, error)
 	Update(id uint, req *U) (*T, error)
 }
 
-type BaseHandler[T repository.Entity, Q repository.Query, C RequestDTO, U RequestDTO] struct {
+type BaseHandler[T repository.Entity, Q repository.Query, C dto.RequestDTO, U dto.RequestDTO] struct {
 	Service       *service.BaseService[T, Q]
 	EntityService EntityService[T, Q, C, U]
 }
 
-func NewBaseHandler[T repository.Entity, Q repository.Query, C RequestDTO, U RequestDTO](
+func NewBaseHandler[T repository.Entity, Q repository.Query, C dto.RequestDTO, U dto.RequestDTO](
 	service *service.BaseService[T, Q],
 	entityService EntityService[T, Q, C, U],
 ) *BaseHandler[T, Q, C, U] {
@@ -36,7 +32,7 @@ func NewBaseHandler[T repository.Entity, Q repository.Query, C RequestDTO, U Req
 // Create handles POST / requests
 func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 	var req C
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := req.Bind(c); err != nil {
 		response.BadRequest(c, err)
 		return
 	}

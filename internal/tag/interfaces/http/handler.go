@@ -3,7 +3,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/query"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/tag/application/service"
 	"github.com/jambo0624/blog/internal/tag/domain/entity"
@@ -37,7 +37,7 @@ func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
 	// Parse name
 	if name := c.Query("name"); name != "" {
 		if len(name) > constants.MaxNameLength {
-			return nil, query.ErrNameTooLong
+			return nil, validate.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}

@@ -1,11 +1,12 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/jambo0624/blog/internal/shared/domain/query"
 	"strconv"
 	"strings"
+	
+	"github.com/gin-gonic/gin"
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 )
 
 // BaseQueryBuilder handles common query parameters
@@ -31,7 +32,7 @@ func (b *BaseQueryBuilder) BuildIDs(c *gin.Context) ([]uint, error) {
 		for _, id := range ids {
 			uid, err := strconv.ParseUint(id, 10, 32)
 			if err != nil {
-				return nil, query.ErrInvalidIDFormat
+				return nil, validate.ErrInvalidIDFormat
 			}
 			uintIDs = append(uintIDs, uint(uid))
 		}
@@ -48,7 +49,7 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 	if limitStr := c.Query("limit"); limitStr != "" {
 		l, err := strconv.Atoi(limitStr)
 		if err != nil || l < 0 {
-			return 0, 0, query.ErrInvalidLimit
+			return 0, 0, validate.ErrInvalidLimit
 		}
 		if l > constants.MaxPageSize {
 			l = constants.MaxPageSize
@@ -59,7 +60,7 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 	if offsetStr := c.Query("offset"); offsetStr != "" {
 		o, err := strconv.Atoi(offsetStr)
 		if err != nil || o < 0 {
-			return 0, 0, query.ErrInvalidOffset
+			return 0, 0, validate.ErrInvalidOffset
 		}
 		offset = o
 	}
@@ -81,7 +82,7 @@ func (b *BaseQueryBuilder) BuildOrderBy(c *gin.Context, additionalFields map[str
 
 		field := strings.TrimSuffix(strings.TrimPrefix(orderBy, "-"), " DESC")
 		if !allowedFields[field] {
-			return "", query.ErrInvalidOrderByField
+			return "", validate.ErrInvalidOrderByField
 		}
 
 		return orderBy, nil
