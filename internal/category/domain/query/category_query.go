@@ -36,3 +36,7 @@ func (q *CategoryQuery) Validate() error {
 	}
 	return nil
 }
+
+func (q *CategoryQuery) GetBaseQuery() baseQuery.BaseQuery {
+	return q.BaseQuery
+}

@@ -28,39 +28,46 @@ func (r *GormCategoryRepository) FindByID(id uint) (*categoryEntity.Category, er
 	return &category, nil
 }
 
-func (r *GormCategoryRepository) FindAll(q *categoryQuery.CategoryQuery) ([]*categoryEntity.Category, error) {
+func (r *GormCategoryRepository) FindAll(q *categoryQuery.CategoryQuery) ([]*categoryEntity.Category, int64, error) {
 	var categories []*categoryEntity.Category
-	db := r.db
+	var total int64
 
-	// Apply filters
+	// Build query with filters
+	query := r.db.Model(&categoryEntity.Category{})
 	if len(q.IDs) > 0 {
-		db = db.Where("id IN ?", q.IDs)
+		query = query.Where("id IN ?", q.IDs)
 	}
 	if q.NameLike != "" {
-		db = db.Where("name LIKE ?", "%"+q.NameLike+"%")
+		query = query.Where("name LIKE ?", "%"+q.NameLike+"%")
 	}
 	if q.SlugLike != "" {
-		db = db.Where("slug LIKE ?", "%"+q.SlugLike+"%")
+		query = query.Where("slug LIKE ?", "%"+q.SlugLike+"%")
+	}
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
 	// Apply pagination
 	if q.Limit > 0 {
-		db = db.Limit(q.Limit)
+		query = query.Limit(q.Limit)
 	}
 	if q.Offset > 0 {
-		db = db.Offset(q.Offset)
+		query = query.Offset(q.Offset)
 	}
 
 	// Apply sorting
 	if q.OrderBy != "" {
-		db = db.Order(q.OrderBy)
+		query = query.Order(q.OrderBy)
 	}
 
-	err := db.Find(&categories).Error
-	if err != nil {
-		return nil, err
+	// Get results
+	if err := query.Find(&categories).Error; err != nil {
+		return nil, 0, err
 	}
-	return categories, nil
+
+	return categories, total, nil
 }
 
 func (r *GormCategoryRepository) Update(category *categoryEntity.Category) error {

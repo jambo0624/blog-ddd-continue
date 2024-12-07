@@ -20,9 +20,9 @@ func (s *BaseService[T, Q]) FindByID(id uint) (*T, error) {
 	return s.Repo.FindByID(id)
 }
 
-func (s *BaseService[T, Q]) FindAll(query Q) ([]*T, error) {
+func (s *BaseService[T, Q]) FindAll(query Q) ([]*T, int64, error) {
 	if err := query.Validate(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	return s.Repo.FindAll(query)
 }

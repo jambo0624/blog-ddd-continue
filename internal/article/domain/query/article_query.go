@@ -46,8 +46,9 @@ func (q *ArticleQuery) Validate() error {
 	if len(q.TitleLike) > constants.MaxTitleLength {
 		return baseQuery.ErrTitleTooLong
 	}
-	if len(q.ContentLike) > constants.MaxContentLength {
-		return baseQuery.ErrContentTooLong
-	}
 	return nil
+}
+
+func (q *ArticleQuery) GetBaseQuery() baseQuery.BaseQuery {
+	return q.BaseQuery
 }

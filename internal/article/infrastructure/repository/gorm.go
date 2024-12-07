@@ -32,49 +32,52 @@ func (r *GormArticleRepository) Delete(id uint) error {
 	return r.db.Delete(&articleEntity.Article{}, id).Error
 }
 
-func (r *GormArticleRepository) FindAll(q *articleQuery.ArticleQuery) ([]*articleEntity.Article, error) {
+func (r *GormArticleRepository) FindAll(q *articleQuery.ArticleQuery) ([]*articleEntity.Article, int64, error) {
 	var articles []*articleEntity.Article
-	db := r.db
+	var total int64
+	// Build query with filters
+	query := r.db.Model(&articleEntity.Article{})
 
 	// Apply filters
 	if len(q.IDs) > 0 {
-		db = db.Where("id IN ?", q.IDs)
+		query = query.Where("id IN ?", q.IDs)
 	}
 	if q.CategoryID != nil {
-		db = db.Where("category_id = ?", *q.CategoryID)
+		query = query.Where("category_id = ?", *q.CategoryID)
 	}
 	if len(q.TagIDs) > 0 {
-		db = db.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
+		query = query.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
 			Where("article_tags.tag_id IN ?", q.TagIDs)
 	}
 	if q.TitleLike != "" {
-		db = db.Where("title LIKE ?", "%"+q.TitleLike+"%")
+		query = query.Where("title LIKE ?", "%"+q.TitleLike+"%")
 	}
 	if q.ContentLike != "" {
-		db = db.Where("content LIKE ?", "%"+q.ContentLike+"%")
+		query = query.Where("content LIKE ?", "%"+q.ContentLike+"%")
 	}
 
 	// Apply pagination
 	if q.Limit > 0 {
-		db = db.Limit(q.Limit)
+		query = query.Limit(q.Limit)
 	}
 	if q.Offset > 0 {
-		db = db.Offset(q.Offset)
+		query = query.Offset(q.Offset)
 	}
 
 	// Apply sorting
 	if q.OrderBy != "" {
-		db = db.Order(q.OrderBy)
+		query = query.Order(q.OrderBy)
 	}
 
 	// Eager loading
-	db = db.Preload("Category").Preload("Tags")
+	query = query.Preload("Category").Preload("Tags")
 
-	err := db.Find(&articles).Error
-	if err != nil {
-		return nil, err
+	// Get results
+	if err := query.Find(&articles).Error; err != nil {
+		return nil, 0, err
 	}
-	return articles, nil
+
+	return articles, total, nil
 }
 
 func (r *GormArticleRepository) Update(article *articleEntity.Article) error {

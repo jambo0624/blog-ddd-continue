@@ -1,5 +1,7 @@
 package query
 
+import "github.com/jambo0624/blog/internal/shared/domain/constants"
+
 // BaseQuery base query struct
 type BaseQuery struct {
 	IDs     []uint // for IN query
@@ -11,8 +13,8 @@ type BaseQuery struct {
 // NewBaseQuery create a new base query
 func NewBaseQuery() BaseQuery {
 	return BaseQuery{
-		Limit:  10,
-		Offset: 0,
+		Limit:  constants.DefaultPageSize,
+		Offset: constants.DefaultPageOffset,
 	}
 }
 

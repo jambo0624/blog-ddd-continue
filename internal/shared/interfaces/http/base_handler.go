@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jambo0624/blog/internal/shared/application/service"
 	"github.com/jambo0624/blog/internal/shared/domain/repository"
+	"github.com/jambo0624/blog/internal/shared/interfaces/http/response"
 )
 
 // RequestDTO interface for create/update requests
@@ -36,22 +37,22 @@ func NewBaseHandler[T repository.Entity, Q repository.Query, C RequestDTO, U Req
 func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 	var req C
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		response.BadRequest(c, err)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		response.ValidationError(c, err)
 		return
 	}
 
 	entity, err := h.EntityService.Create(&req)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.InternalError(c, err)
 		return
 	}
 
-	c.JSON(201, entity)
+	response.Created(c, entity)
 }
 
 // Update handles PUT /:id requests
@@ -60,22 +61,22 @@ func (h *BaseHandler[T, Q, C, U]) Update(c *gin.Context) {
 
 	var req U
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		response.BadRequest(c, err)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		response.ValidationError(c, err)
 		return
 	}
 
 	entity, err := h.EntityService.Update(id, &req)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.InternalError(c, err)
 		return
 	}
 
-	c.JSON(200, entity)
+	response.Success(c, entity)
 }
 
 // FindByID handles GET /:id requests
@@ -83,40 +84,36 @@ func (h *BaseHandler[T, Q, C, U]) FindByID(c *gin.Context) {
 	id := ParseUintParam(c, "id")
 	entity, err := h.Service.FindByID(id)
 	if err != nil {
-		c.JSON(404, gin.H{"error": "not found"})
+		response.NotFound(c)
 		return
 	}
-	c.JSON(200, entity)
+	response.Success(c, entity)
 }
 
 // FindAll handles GET / requests with query parameters
 func (h *BaseHandler[T, Q, C, U]) FindAll(c *gin.Context, buildQuery func(*gin.Context) (Q, error)) {
 	query, err := buildQuery(c)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		response.BadRequest(c, err)
 		return
 	}
 
-	entities, err := h.Service.FindAll(query)
+	entities, total, err := h.Service.FindAll(query)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.InternalError(c, err)
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"data": entities,
-		"meta": gin.H{
-			"total": len(entities),
-		},
-	})
+	meta := response.NewMetaFromQuery(total, query.GetBaseQuery())
+	response.SuccessWithMeta(c, entities, *meta)
 }
 
 // Delete handles DELETE /:id requests
 func (h *BaseHandler[T, Q, C, U]) Delete(c *gin.Context) {
 	id := ParseUintParam(c, "id")
 	if err := h.Service.Delete(id); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.InternalError(c, err)
 		return
 	}
-	c.JSON(204, nil)
+	response.NoContent(c)
 }

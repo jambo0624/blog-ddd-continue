@@ -28,36 +28,41 @@ func (r *GormTagRepository) FindByID(id uint) (*tagEntity.Tag, error) {
 	return &tag, nil
 }
 
-func (r *GormTagRepository) FindAll(q *tagQuery.TagQuery) ([]*tagEntity.Tag, error) {
+func (r *GormTagRepository) FindAll(q *tagQuery.TagQuery) ([]*tagEntity.Tag, int64, error) {
 	var tags []*tagEntity.Tag
-	db := r.db
+	var total int64
 
-	// Apply filters
+	// Build query with filters
+	query := r.db.Model(&tagEntity.Tag{})
 	if len(q.IDs) > 0 {
-		db = db.Where("id IN ?", q.IDs)
+		query = query.Where("id IN ?", q.IDs)
 	}
 	if q.NameLike != "" {
-		db = db.Where("name LIKE ?", "%"+q.NameLike+"%")
+		query = query.Where("name LIKE ?", "%"+q.NameLike+"%")
 	}
 
-	// Apply pagination
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination and sorting
 	if q.Limit > 0 {
-		db = db.Limit(q.Limit)
+		query = query.Limit(q.Limit)
 	}
 	if q.Offset > 0 {
-		db = db.Offset(q.Offset)
+		query = query.Offset(q.Offset)
 	}
-
-	// Apply sorting
 	if q.OrderBy != "" {
-		db = db.Order(q.OrderBy)
+		query = query.Order(q.OrderBy)
 	}
 
-	err := db.Find(&tags).Error
-	if err != nil {
-		return nil, err
+	// Get results
+	if err := query.Find(&tags).Error; err != nil {
+		return nil, 0, err
 	}
-	return tags, nil
+
+	return tags, total, nil
 }
 
 func (r *GormTagRepository) Update(tag *tagEntity.Tag) error {
@@ -66,4 +71,21 @@ func (r *GormTagRepository) Update(tag *tagEntity.Tag) error {
 
 func (r *GormTagRepository) Delete(id uint) error {
 	return r.db.Delete(&tagEntity.Tag{}, id).Error
+}
+
+func (r *GormTagRepository) Count(q *tagQuery.TagQuery) (int64, error) {
+	var count int64
+	db := r.db
+
+	// Apply filters (same as FindAll)
+	if len(q.IDs) > 0 {
+		db = db.Where("id IN ?", q.IDs)
+	}
+	if q.NameLike != "" {
+		db = db.Where("name LIKE ?", "%"+q.NameLike+"%")
+	}
+	// ... other filters
+
+	err := db.Model(&tagEntity.Tag{}).Count(&count).Error
+	return count, err
 }

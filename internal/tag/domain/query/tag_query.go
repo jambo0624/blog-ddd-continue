@@ -38,3 +38,7 @@ func (q *TagQuery) Validate() error {
 	}
 	return nil
 }
+
+func (q *TagQuery) GetBaseQuery() baseQuery.BaseQuery {
+	return q.BaseQuery
+}
