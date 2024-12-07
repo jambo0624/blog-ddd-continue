@@ -85,6 +85,7 @@ help:
 	@echo "make deps          - Download and tidy dependencies"
 	@echo "make mock          - Generate mock files"
 	@echo "make migrate       - Run database migrations"
+	@echo "make migrate-test  - Run database migrations in test environment"
 	@echo "make lint          - Run linter"
 	@echo "make dev           - Run in development mode"
 	@echo "make test-env      - Run in test environment"
