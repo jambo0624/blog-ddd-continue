@@ -16,8 +16,8 @@ func NewBaseService[T repository.Entity, Q repository.Query](
 	}
 }
 
-func (s *BaseService[T, Q]) FindByID(id uint) (*T, error) {
-	return s.Repo.FindByID(id)
+func (s *BaseService[T, Q]) FindByID(id uint, preloadAssociations ...string) (*T, error) {
+	return s.Repo.FindByID(id, preloadAssociations...)
 }
 
 func (s *BaseService[T, Q]) FindAll(query Q) ([]*T, int64, error) {

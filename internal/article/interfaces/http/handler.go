@@ -11,6 +11,7 @@ import (
 	"github.com/jambo0624/blog/internal/shared/domain/query"
 	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
+	"github.com/jambo0624/blog/internal/shared/interfaces/http/response"
 )
 
 type ArticleHandler struct {
@@ -94,4 +95,17 @@ func (h *ArticleHandler) buildQuery(c *gin.Context) (*articleQuery.ArticleQuery,
 
 func (h *ArticleHandler) FindAll(c *gin.Context) {
 	h.BaseHandler.FindAll(c, h.buildQuery)
+}
+
+func (h *ArticleHandler) FindByID(c *gin.Context) {
+	id := sharedHttp.ParseUintParam(c, "id")
+	query := articleQuery.NewArticleQuery()
+	preloadAssociations := query.GetPreloadAssociations()
+	entity, err := h.Service.FindByID(id, preloadAssociations...)
+
+	if err != nil {
+		response.NotFound(c)
+		return
+	}
+	response.Success(c, entity)
 }

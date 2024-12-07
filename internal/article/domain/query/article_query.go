@@ -1,21 +1,31 @@
 package query
 
 import (
-	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
+	"gorm.io/gorm"
+
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
+	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
+// Preload constants for Article queries
+const (
+	PreloadCategory = "Category"
+	PreloadTags     = "Tags"
+)
+	
 type ArticleQuery struct {
 	baseQuery.BaseQuery
-	CategoryID  *uint  // article specific field
-	TagIDs      []uint // article specific field
-	TitleLike   string // article specific field
-	ContentLike string // article specific field
+	CategoryID          *uint    // article specific field
+	TagIDs              []uint   // article specific field
+	TitleLike           string   // article specific field
+	ContentLike         string   // article specific field
+	PreloadAssociations []string // store associations to be preloaded
 }
 
 func NewArticleQuery() *ArticleQuery {
 	return &ArticleQuery{
-		BaseQuery: baseQuery.NewBaseQuery(),
+		BaseQuery:           baseQuery.NewBaseQuery(),
+		PreloadAssociations: getDefaultPreloads(),
 	}
 }
 
@@ -51,4 +61,35 @@ func (q *ArticleQuery) Validate() error {
 
 func (q *ArticleQuery) GetBaseQuery() baseQuery.BaseQuery {
 	return q.BaseQuery
+}
+
+func (q *ArticleQuery) GetPreloadAssociations() []string {
+	return q.PreloadAssociations
+}
+
+func (q *ArticleQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
+	if len(q.IDs) > 0 {
+		db = db.Where("id IN ?", q.IDs)
+	}
+	if q.CategoryID != nil {
+		db = db.Where("category_id = ?", *q.CategoryID)
+	}
+	if len(q.TagIDs) > 0 {
+		db = db.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
+			Where("article_tags.tag_id IN ?", q.TagIDs)
+	}
+	if q.TitleLike != "" {
+		db = db.Where("title LIKE ?", "%"+q.TitleLike+"%")
+	}
+	if q.ContentLike != "" {
+		db = db.Where("content LIKE ?", "%"+q.ContentLike+"%")
+	}
+
+	return db
+}
+
+
+// getDefaultPreloads returns default preload associations for Article queries
+func getDefaultPreloads() []string {
+	return []string{PreloadCategory, PreloadTags}
 }

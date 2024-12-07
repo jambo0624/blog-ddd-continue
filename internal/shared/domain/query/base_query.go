@@ -4,17 +4,19 @@ import "github.com/jambo0624/blog/internal/shared/domain/constants"
 
 // BaseQuery base query struct
 type BaseQuery struct {
-	IDs     []uint // for IN query
-	Limit   int    // for pagination
-	Offset  int    // for pagination
-	OrderBy string // for sorting
+	IDs                 []uint   // for IN query
+	Limit               int      // for pagination
+	Offset              int      // for pagination
+	OrderBy             string   // for sorting
+	PreloadAssociations []string // store associations to be preloaded
 }
 
 // NewBaseQuery create a new base query
 func NewBaseQuery() BaseQuery {
 	return BaseQuery{
-		Limit:  constants.DefaultPageSize,
-		Offset: constants.DefaultPageOffset,
+		Limit:               constants.DefaultPageSize,
+		Offset:              constants.DefaultPageOffset,
+		PreloadAssociations: []string{},
 	}
 }
 
@@ -46,4 +48,9 @@ func (q *BaseQuery) Validate() error {
 		return ErrInvalidOffset
 	}
 	return nil
+}
+
+// GetPreloadAssociations get the preload associations
+func (q *BaseQuery) GetPreloadAssociations() []string {
+	return q.PreloadAssociations
 }

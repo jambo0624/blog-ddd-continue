@@ -22,7 +22,6 @@ func NewCategoryHandler(cs *categoryService.CategoryService) *CategoryHandler {
   }
 }
 
-
 func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQuery, error) {
 	q := categoryQuery.NewCategoryQuery()
 	builder := http.NewBaseQueryBuilder()
