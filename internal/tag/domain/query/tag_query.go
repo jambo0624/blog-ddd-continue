@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
@@ -36,7 +37,7 @@ func (q *TagQuery) Validate() error {
 		return err
 	}
 	if len(q.NameLike) > constants.MaxNameLength {
-		return baseQuery.ErrNameTooLong
+		return validate.ErrNameTooLong
 	}
 	return nil
 }

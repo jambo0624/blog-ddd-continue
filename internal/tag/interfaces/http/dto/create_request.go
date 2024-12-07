@@ -14,32 +14,13 @@ type CreateTagRequest struct {
 	Color string `json:"color" binding:"required"`
 }
 
-type UpdateTagRequest struct {
-	dto.BaseRequest
-	Name  string `json:"name"`
-	Color string `json:"color"`
-}
-
 func (r CreateTagRequest) Bind(c *gin.Context) error {
 	return r.BaseRequest.Bind(c)
 }
 
 func (r CreateTagRequest) Validate() error {
-	// Business rules validation
 	if len(r.Name) > constants.MaxNameLength {
 		return validate.ErrNameTooLong
 	}
-
 	return nil
-}
-
-func (r UpdateTagRequest) Bind(c *gin.Context) error {
-	return r.BaseRequest.Bind(c)
-}
-
-func (r UpdateTagRequest) Validate() error {
-	if r.Name != "" && len(r.Name) > constants.MaxNameLength {
-		return validate.ErrNameTooLong
-	}
-	return nil
-}
+} 
