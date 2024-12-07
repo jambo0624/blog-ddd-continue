@@ -32,7 +32,7 @@ func NewBaseHandler[T repository.Entity, Q repository.Query, C dto.RequestDTO, U
 // Create handles POST / requests
 func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 	var req C
-	if err := req.Bind(c); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err)
 		return
 	}

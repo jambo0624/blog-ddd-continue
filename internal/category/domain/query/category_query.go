@@ -2,16 +2,14 @@ package query
 
 import (
 	"gorm.io/gorm"
-	
-	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
+
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
 type CategoryQuery struct {
 	baseQuery.BaseQuery
-	NameLike string // category specific field
-	SlugLike string // category specific field
+	NameLike string `json:"name_like" binding:"omitempty, max=100" validate:"omitempty,max=100"`
+	SlugLike string `json:"slug_like" binding:"omitempty, max=100" validate:"omitempty,max=100"`
 }
 
 func NewCategoryQuery() *CategoryQuery {
@@ -31,13 +29,7 @@ func (q *CategoryQuery) WithSlugLike(slug string) *CategoryQuery {
 }
 
 func (q *CategoryQuery) Validate() error {
-	if err := q.BaseQuery.Validate(); err != nil {
-		return err
-	}
-	if len(q.NameLike) > constants.MaxNameLength {
-		return validate.ErrNameTooLong
-	}
-	return nil
+	return q.BaseQuery.ValidateQuery(q)
 }
 
 func (q *CategoryQuery) GetBaseQuery() baseQuery.BaseQuery {

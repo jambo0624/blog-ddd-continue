@@ -3,15 +3,13 @@ package query
 import (
 	"gorm.io/gorm"
 
-	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
 type TagQuery struct {
 	baseQuery.BaseQuery
-	NameLike  string // tag specific field
-	ColorLike string // tag specific field
+	NameLike  string `validate:"omitempty,max=100" binding:"omitempty,max=100" validate:"omitempty,max=100"`
+	ColorLike string `validate:"omitempty,hexcolor" binding:"omitempty,hexcolor" validate:"omitempty,hexcolor"`
 }
 
 func NewTagQuery() *TagQuery {
@@ -30,16 +28,8 @@ func (q *TagQuery) WithColorLike(color string) *TagQuery {
 	return q
 }
 
-// override the base class validation method
-// add specific validation rules
 func (q *TagQuery) Validate() error {
-	if err := q.BaseQuery.Validate(); err != nil {
-		return err
-	}
-	if len(q.NameLike) > constants.MaxNameLength {
-		return validate.ErrNameTooLong
-	}
-	return nil
+	return q.BaseQuery.ValidateQuery(q)
 }
 
 func (q *TagQuery) GetBaseQuery() baseQuery.BaseQuery {

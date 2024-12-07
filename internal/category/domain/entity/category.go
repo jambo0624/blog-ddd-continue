@@ -1,27 +1,28 @@
 package entity
 
 import (
-	"fmt"
-	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 	"time"
+
+	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
+	"github.com/jambo0624/blog/internal/shared/domain/validate"
 )
 
 type Category struct {
-	ID        uint       `gorm:"primary_key"`
-	Name      string     `gorm:"size:100;not null"`
-	Slug      string     `gorm:"size:100;not null;unique"`
-	CreatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
-	DeletedAt *time.Time `gorm:"index"`
+	ID        uint       `gorm:"primary_key" json:"id" binding:"required"`
+	Name      string     `gorm:"size:100;not null" json:"name" binding:"required"`
+	Slug      string     `gorm:"size:100;not null;unique" json:"slug" binding:"required"`
+	CreatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	DeletedAt *time.Time `gorm:"index" json:"deleted_at"`
 }
 
 // NewCategory create new category, all fields are required
 func NewCategory(name, slug string) (*Category, error) {
 	if name == "" {
-		return nil, fmt.Errorf("name is required")
+		return nil, validate.ErrNameRequired
 	}
 	if slug == "" {
-		return nil, fmt.Errorf("slug is required")
+		return nil, validate.ErrSlugRequired
 	}
 
 	return &Category{

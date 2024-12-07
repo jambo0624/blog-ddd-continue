@@ -3,9 +3,7 @@ package query
 import (
 	"gorm.io/gorm"
 
-	"github.com/jambo0624/blog/internal/shared/domain/constants"
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
 )
 
 // Preload constants for Article queries
@@ -16,11 +14,11 @@ const (
 	
 type ArticleQuery struct {
 	baseQuery.BaseQuery
-	CategoryID          *uint    // article specific field
-	TagIDs              []uint   // article specific field
-	TitleLike           string   // article specific field
-	ContentLike         string   // article specific field
-	PreloadAssociations []string // store associations to be preloaded
+	CategoryID          *uint  `json:"category_id" binding:"omitempty" validate:"omitempty,gt=0"`
+	TagIDs              []uint `json:"tag_ids" binding:"omitempty" validate:"omitempty,dive,gt=0"`
+	TitleLike           string `json:"title_like" binding:"omitempty" validate:"omitempty,max=255"`
+	ContentLike         string `json:"content_like" binding:"omitempty, max=255"`
+	PreloadAssociations []string `json:"preload_associations" binding:"omitempty"`
 }
 
 func NewArticleQuery() *ArticleQuery {
@@ -51,13 +49,7 @@ func (q *ArticleQuery) WithContentLike(content string) *ArticleQuery {
 }
 
 func (q *ArticleQuery) Validate() error {
-	if err := q.BaseQuery.Validate(); err != nil {
-		return err
-	}
-	if len(q.TitleLike) > constants.MaxTitleLength {
-		return validate.ErrTitleTooLong
-	}
-	return nil
+	return q.BaseQuery.ValidateQuery(q)
 }
 
 func (q *ArticleQuery) GetBaseQuery() baseQuery.BaseQuery {

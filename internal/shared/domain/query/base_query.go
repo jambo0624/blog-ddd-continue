@@ -1,17 +1,19 @@
 package query
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
 )
+
+var ValidateQuery = validator.New()
 
 // BaseQuery base query struct
 type BaseQuery struct {
-	IDs                 []uint   // for IN query
-	Limit               int      // for pagination
-	Offset              int      // for pagination
-	OrderBy             string   // for sorting
-	PreloadAssociations []string // store associations to be preloaded
+	IDs                 []uint   `json:"ids" binding:"omitempty" validate:"omitempty,dive,gt=0"`
+	Limit               int      `json:"limit" binding:"omitempty, min=1" validate:"omitempty,min=1"`
+	Offset              int      `json:"offset" binding:"omitempty, min=0" validate:"omitempty,min=0"`
+	OrderBy             string   `json:"order_by" binding:"omitempty" validate:"omitempty"`
+	PreloadAssociations []string `json:"preload_associations" binding:"omitempty"`
 }
 
 // NewBaseQuery create a new base query
@@ -42,15 +44,9 @@ func (q *BaseQuery) WithOrderBy(orderBy string) *BaseQuery {
 	return q
 }
 
-// Validate validate the query parameters
-func (q *BaseQuery) Validate() error {
-	if q.Limit < 0 {
-		return validate.ErrInvalidLimit
-	}
-	if q.Offset < 0 {
-		return validate.ErrInvalidOffset
-	}
-	return nil
+// ValidateQuery validate the query parameters
+func (q *BaseQuery) ValidateQuery(v any) error {
+	return ValidateQuery.Struct(v)
 }
 
 // GetPreloadAssociations get the preload associations
