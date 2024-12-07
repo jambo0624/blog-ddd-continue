@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"time"
+
 	"github.com/jambo0624/blog/internal/shared/domain/repository"
 	"gorm.io/gorm"
 )
@@ -48,9 +50,15 @@ func (r *BaseGormRepository[T, Q]) FindAll(q Q) ([]*T, int64, error) {
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
+	
+	// Apply preloads
+	for _, preload := range any(q).(interface{ GetPreloadAssociations() []string }).GetPreloadAssociations() {
+		query = query.Preload(preload)
+	}
+
+	baseQuery := q.GetBaseQuery()	
 
 	// Apply pagination and sorting
-	baseQuery := q.GetBaseQuery()
 	if baseQuery.Limit > 0 {
 		query = query.Limit(baseQuery.Limit)
 	}
@@ -60,11 +68,7 @@ func (r *BaseGormRepository[T, Q]) FindAll(q Q) ([]*T, int64, error) {
 	if baseQuery.OrderBy != "" {
 		query = query.Order(baseQuery.OrderBy)
 	}
-	
-	// Apply preloads
-	for _, preload := range baseQuery.PreloadAssociations {
-		query = query.Preload(preload)
-	}
+
 	// Get results
 	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
@@ -77,6 +81,7 @@ func (r *BaseGormRepository[T, Q]) Update(entity *T) error {
 	return r.db.Save(entity).Error
 }
 
+// Delete implements soft delete
 func (r *BaseGormRepository[T, Q]) Delete(id uint) error {
-	return r.db.Delete(new(T), id).Error
+	return r.db.Model(new(T)).Where("id = ?", id).Update("deleted_at", time.Now()).Error
 }

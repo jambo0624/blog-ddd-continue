@@ -32,18 +32,31 @@ func LoadConfig() (*Config, error) {
 		env = "development"
 	}
 
+	// Add all possible config paths
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("../../..")  // For tests
+	viper.AddConfigPath("../../../..") // For deeper test directories
+	
 	viper.SetConfigName(fmt.Sprintf(".env.%s", env))
 	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
 
 	// Set default values
 	viper.SetDefault("SERVER_PORT", "8080")
+	viper.SetDefault("DATABASE_URL", "postgres://username:password@localhost:5432/databasename")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if env != "production" {
-			return nil, fmt.Errorf("error reading config file: %s", err)
+			fmt.Printf("Warning: Config file not found, using defaults. Error: %v\n", err)
+			// not production environment, use default value instead of returning error
+			return &Config{
+				Database: ParseDatabaseURL(viper.GetString("DATABASE_URL")),
+				Server: ServerConfig{
+					Port: viper.GetString("SERVER_PORT"),
+				},
+			}, nil
 		}
+		return nil, fmt.Errorf("error reading config file: %s", err)
 	}
 
 	config := &Config{

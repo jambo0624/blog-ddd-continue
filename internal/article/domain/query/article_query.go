@@ -69,23 +69,16 @@ func (q *ArticleQuery) GetPreloadAssociations() []string {
 }
 
 func (q *ArticleQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
-	if len(q.IDs) > 0 {
-		db = db.Where("id IN ?", q.IDs)
-	}
 	if q.CategoryID != nil {
-		db = db.Where("category_id = ?", *q.CategoryID)
+		db = db.Where("category_id = ?", q.CategoryID)
 	}
+	
 	if len(q.TagIDs) > 0 {
-		db = db.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
-			Where("article_tags.tag_id IN ?", q.TagIDs)
+		db = db.Joins("LEFT JOIN article_tags ON articles.id = article_tags.article_id").
+			Where("article_tags.tag_id IN ?", q.TagIDs).
+			Group("articles.id")
 	}
-	if q.TitleLike != "" {
-		db = db.Where("title LIKE ?", "%"+q.TitleLike+"%")
-	}
-	if q.ContentLike != "" {
-		db = db.Where("content LIKE ?", "%"+q.ContentLike+"%")
-	}
-
+	
 	return db
 }
 
