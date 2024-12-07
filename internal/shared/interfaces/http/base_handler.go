@@ -37,11 +37,6 @@ func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		response.ValidationError(c, err)
-		return
-	}
-
 	entity, err := h.EntityService.Create(&req)
 	if err != nil {
 		response.InternalError(c, err)
@@ -58,11 +53,6 @@ func (h *BaseHandler[T, Q, C, U]) Update(c *gin.Context) {
 	var req U
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err)
-		return
-	}
-
-	if err := req.Validate(); err != nil {
-		response.ValidationError(c, err)
 		return
 	}
 
