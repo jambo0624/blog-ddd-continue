@@ -38,6 +38,12 @@ deps:
 mock:
 	mockery --all --keeptree
 
+# database init
+db-init:
+	DB_USER=$${DB_USER:-blog_user} \
+	DB_PASSWORD=$${DB_PASSWORD:-your_default_password} \
+	psql -U postgres -f database/init.sql 
+
 # execute migrations
 migrate:
 	$(GOCMD) run cmd/migrate/main.go
@@ -83,6 +89,7 @@ help:
 	@echo "make clean          - Clean build files"
 	@echo "make run            - Run the application"
 	@echo "make deps           - Download and tidy dependencies"
+	@echo "make db-init        - Initialize database"
 	@echo "make mock           - Generate mock files"
 	@echo "make migrate        - Run database migrations"
 	@echo "make migrate-test   - Run database migrations in test environment"
