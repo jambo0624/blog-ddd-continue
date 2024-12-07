@@ -29,50 +29,53 @@ clean:
 run:
 	$(GOCMD) run $(MAIN_PATH)
 
-# 依赖管理
+# download dependencies
 deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
-# 生成 mock
+# generate mock files
 mock:
 	mockery --all --keeptree
 
-# 数据库迁移
+# execute migrations
 migrate:
 	$(GOCMD) run cmd/migrate/main.go
 
-# 代码检查
+migrate-test:
+	GO_ENV=test $(GOCMD) run cmd/migrate/main.go
+
+# run code lint
 lint:
 	golangci-lint run
 
-# 交叉编译
+# cross compile
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) $(MAIN_PATH)
 
 build-windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_WINDOWS) $(MAIN_PATH)
 
-# 开发模式运行
+# run in development mode
 dev:
 	GO_ENV=development $(GOCMD) run $(MAIN_PATH)
 
-# 测试环境运行
+# run in test environment
 test-env:
 	GO_ENV=test $(GOCMD) run $(MAIN_PATH)
 
-# 生产环境运行
+# run in production environment
 prod:
 	GO_ENV=production $(GOCMD) run $(MAIN_PATH)
 
-# Docker 相关命令
+# Docker related commands
 docker-build:
 	docker build -t $(BINARY_NAME) .
 
 docker-run:
 	docker run -p 8080:8080 $(BINARY_NAME)
 
-# 帮助信息
+# help information
 help:
 	@echo "Make commands:"
 	@echo "make build          - Build the application"
