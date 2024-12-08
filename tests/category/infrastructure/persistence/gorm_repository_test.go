@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jambo0624/blog/tests/testutil"
-	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/repository"
+	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/persistence"
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
 	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"

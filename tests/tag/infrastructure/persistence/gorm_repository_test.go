@@ -9,7 +9,7 @@ import (
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
+	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/persistence"
 )
 
 func setupTest(t *testing.T) (*testutil.TestDB, func(), tagRepository.TagRepository, *factory.TagFactory) {
