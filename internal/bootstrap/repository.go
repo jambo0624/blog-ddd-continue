@@ -7,9 +7,9 @@ import (
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
 
-	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/repository"
-	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/repository"
-	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
+	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/persistence"
+	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/persistence"
+	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/persistence"
 )
 
 type Repositories struct {
