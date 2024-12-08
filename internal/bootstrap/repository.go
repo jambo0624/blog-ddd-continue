@@ -4,12 +4,11 @@ import (
 	"gorm.io/gorm"
 
 	articleRepository "github.com/jambo0624/blog/internal/article/domain/repository"
+	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/repository"
 	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/repository"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-
-	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/persistence"
-	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/persistence"
-	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/persistence"
+	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
 )
 
 type Repositories struct {
@@ -24,4 +23,4 @@ func SetupRepositories(db *gorm.DB) *Repositories {
 		Category: categoryPersistence.NewGormCategoryRepository(db),
 		Tag:      tagPersistence.NewGormTagRepository(db),
 	}
-} 
+}

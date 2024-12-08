@@ -2,19 +2,25 @@ package service_test
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/category/application/service"
 	"github.com/jambo0624/blog/internal/category/domain/query"
-	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
+	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 )
 
-func setupTest(t *testing.T) (*mockCategory.MockCategoryRepository, *service.CategoryService, *factory.CategoryFactory) {
+func setupTest(t *testing.T) (
+	*mockCategory.MockCategoryRepository,
+	*service.CategoryService,
+	*factory.CategoryFactory,
+) {
 	t.Helper()
-	
+
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	categoryService := service.NewCategoryService(mockRepo)
 	factory := factory.NewCategoryFactory()
@@ -31,8 +37,8 @@ func TestCategoryService_Create(t *testing.T) {
 
 	category, err := categoryService.Create(req)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, category)
+	require.NoError(t, err)
+	require.NotNil(t, category)
 	assert.Equal(t, req.Name, category.Name)
 	assert.Equal(t, req.Slug, category.Slug)
 }
@@ -47,7 +53,7 @@ func TestCategoryService_FindAll(t *testing.T) {
 
 	found, total, err := categoryService.FindAll(q)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(len(expectedCategories)), total)
 	assert.Equal(t, expectedCategories, found)
 }
@@ -64,7 +70,7 @@ func TestCategoryService_Update(t *testing.T) {
 
 	updated, err := categoryService.Update(1, req)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedCategory.Name, updated.Name)
 	assert.Equal(t, expectedCategory.Slug, updated.Slug)
 }
@@ -76,7 +82,7 @@ func TestCategoryService_Delete(t *testing.T) {
 
 	err := categoryService.Delete(1)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -87,7 +93,7 @@ func TestCategoryService_Create_ValidationError(t *testing.T) {
 	req.Name = "" // invalid name
 
 	category, err := categoryService.Create(req)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, category)
 	mockRepo.AssertNotCalled(t, "Save")
 }
@@ -100,7 +106,7 @@ func TestCategoryService_Update_NotFound(t *testing.T) {
 	req := factory.BuildUpdateRequest()
 	category, err := categoryService.Update(999, req)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, category)
 	mockRepo.AssertNotCalled(t, "Update")
 }

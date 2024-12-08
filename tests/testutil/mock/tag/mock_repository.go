@@ -2,6 +2,7 @@ package tag
 
 import (
 	"github.com/stretchr/testify/mock"
+
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 )
@@ -9,6 +10,12 @@ import (
 type MockTagRepository struct {
 	mock.Mock
 }
+
+const (
+	resultsIndex = 0
+	countIndex   = 1
+	errorIndex   = 2
+)
 
 func (m *MockTagRepository) Save(tag *tagEntity.Tag) error {
 	args := m.Called(tag)
@@ -25,7 +32,9 @@ func (m *MockTagRepository) FindByID(id uint, preloads ...string) (*tagEntity.Ta
 
 func (m *MockTagRepository) FindAll(query *tagQuery.TagQuery) ([]*tagEntity.Tag, int64, error) {
 	args := m.Called(query)
-	return args.Get(0).([]*tagEntity.Tag), args.Get(1).(int64), args.Error(2)
+	return args.Get(resultsIndex).([]*tagEntity.Tag),
+		args.Get(countIndex).(int64),
+		args.Error(errorIndex)
 }
 
 func (m *MockTagRepository) Update(tag *tagEntity.Tag) error {
@@ -36,4 +45,4 @@ func (m *MockTagRepository) Update(tag *tagEntity.Tag) error {
 func (m *MockTagRepository) Delete(id uint) error {
 	args := m.Called(id)
 	return args.Error(0)
-} 
+}

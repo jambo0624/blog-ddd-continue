@@ -18,4 +18,4 @@ func SetupServices(repos *Repositories) *Services {
 		Category: categoryService.NewCategoryService(repos.Category),
 		Tag:      tagService.NewTagService(repos.Tag),
 	}
-} 
+}

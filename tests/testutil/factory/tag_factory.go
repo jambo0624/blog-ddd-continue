@@ -1,85 +1,71 @@
 package factory
 
 import (
-	"fmt"
-
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
 )
 
 type TagFactory struct {
-	sequence int
+	BaseFactory
 }
 
 func NewTagFactory() *TagFactory {
-	return &TagFactory{sequence: 2}
+	return &TagFactory{
+		BaseFactory: NewBaseFactory(),
+	}
 }
 
-// BuildEntity creates a Tag entity with default or custom values
 func (f *TagFactory) BuildEntity(opts ...func(*tagEntity.Tag)) *tagEntity.Tag {
-	f.sequence++
-	tag := &tagEntity.Tag{
-		ID:   uint(f.sequence),
-		Name: fmt.Sprintf("Test Tag %d", f.sequence),
-		Color: fmt.Sprintf("#%06X", f.sequence),
+	seq := f.NextSequence()
+	entity := &tagEntity.Tag{
+		ID:    seq,
+		Name:  f.FormatTestName("Tag"),
+		Color: f.FormatHexColor(),
 	}
-
-	// Apply custom options
-	for _, opt := range opts {
-		opt(tag)
-	}
-
-	return tag
+	return ApplyOptions(entity, opts)
 }
 
-// BuildCreateRequest creates a CreateTagRequest with default or custom values
+func (f *TagFactory) buildRequest(isUpdate bool) interface{} {
+	name := f.FormatTestName("Tag")
+	if isUpdate {
+		name = f.FormatUpdatedName("Tag")
+	}
+	color := f.FormatHexColor()
+
+	if isUpdate {
+		return &dto.UpdateTagRequest{Name: name, Color: color}
+	}
+	return &dto.CreateTagRequest{Name: name, Color: color}
+}
+
 func (f *TagFactory) BuildCreateRequest(opts ...func(*dto.CreateTagRequest)) *dto.CreateTagRequest {
-	f.sequence++
-	req := &dto.CreateTagRequest{
-		Name:  fmt.Sprintf("Test Tag %d", f.sequence),
-		Color: fmt.Sprintf("#%06X", f.sequence),
-	}
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	return req
+	req := BuildRequest[*dto.CreateTagRequest](false, f.buildRequest)
+	return ApplyOptions(req, opts)
 }
 
-// WithName sets custom name
+func (f *TagFactory) BuildUpdateRequest(opts ...func(*dto.UpdateTagRequest)) *dto.UpdateTagRequest {
+	req := BuildRequest[*dto.UpdateTagRequest](true, f.buildRequest)
+	return ApplyOptions(req, opts)
+}
+
+// WithName sets custom name.
 func (f *TagFactory) WithName(name string) func(*tagEntity.Tag) {
 	return func(t *tagEntity.Tag) {
 		t.Name = name
 	}
 }
 
-// WithColor sets custom color
+// WithColor sets custom color.
 func (f *TagFactory) WithColor(color string) func(*tagEntity.Tag) {
 	return func(t *tagEntity.Tag) {
 		t.Color = color
 	}
 }
 
-// BuildUpdateRequest creates an UpdateTagRequest
-func (f *TagFactory) BuildUpdateRequest(opts ...func(*dto.UpdateTagRequest)) *dto.UpdateTagRequest {
-	f.sequence++
-	req := &dto.UpdateTagRequest{
-		Name:  fmt.Sprintf("Updated Tag %d", f.sequence),
-		Color: fmt.Sprintf("#%06X", f.sequence),
-	}
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	return req
-}
-
-// BuildList creates a list of Tag entities
+// BuildList creates a list of Tag entities.
 func (f *TagFactory) BuildList(count int) []*tagEntity.Tag {
 	tags := make([]*tagEntity.Tag, count)
-	for i := 0; i < count; i++ {
+	for i := range tags {
 		tags[i] = f.BuildEntity()
 	}
 	return tags

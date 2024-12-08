@@ -1,13 +1,13 @@
 package dto
 
 type CreateCategoryRequest struct {
-	Name string `json:"name" binding:"required,max=100"`
-	Slug string `json:"slug" binding:"required,max=100"`
+	Name string `binding:"required,max=100" json:"name"`
+	Slug string `binding:"required,max=100" json:"slug"`
 }
 
 type UpdateCategoryRequest struct {
-	Name string `json:"name" binding:"omitempty,max=100"`
-	Slug string `json:"slug" binding:"omitempty,max=100"`
+	Name string `binding:"omitempty,max=100" json:"name"`
+	Slug string `binding:"omitempty,max=100" json:"slug"`
 }
 
 func (r CreateCategoryRequest) Validate() error {

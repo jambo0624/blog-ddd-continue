@@ -9,14 +9,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/shared/infrastructure/config"
+	"github.com/jambo0624/blog/internal/shared/infrastructure/errors"
 	"github.com/jambo0624/blog/internal/shared/infrastructure/persistence"
 	"github.com/jambo0624/blog/tests/testutil/fixtures"
 )
 
 var (
-	testDB *gorm.DB
+	testDB   *gorm.DB
 	testData *fixtures.TestData
-	once sync.Once
+	once     sync.Once
 )
 
 type TestDB struct {
@@ -24,13 +25,13 @@ type TestDB struct {
 	Data *fixtures.TestData
 }
 
-// initTestDB initializes test database connection and loads fixtures once
+// initTestDB initializes test database connection and loads fixtures once.
 func initTestDB() (*gorm.DB, *fixtures.TestData, error) {
 	var err error
 
 	once.Do(func() {
 		os.Setenv("GO_ENV", "test")
-		
+
 		var cfg *config.Config
 		cfg, err = config.LoadConfig()
 		if err != nil {
@@ -49,20 +50,22 @@ func initTestDB() (*gorm.DB, *fixtures.TestData, error) {
 			return
 		}
 	})
-	
+
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to initialize database: %w", err)
+		return nil, nil, errors.ErrFailedToInitializeDB
 	}
-	
+
 	if testDB == nil {
-		return nil, nil, fmt.Errorf("database connection not initialized")
+		return nil, nil, errors.ErrDBNotInitialized
 	}
-	
+
 	return testDB, testData, nil
 }
 
-// SetupTestDB sets up the test database with transaction
+// SetupTestDB sets up the test database with transaction.
 func SetupTestDB(t *testing.T) (*TestDB, func()) {
+	t.Helper()
+
 	db, data, err := initTestDB()
 	if err != nil {
 		t.Fatalf("Failed to initialize test database: %v", err)
@@ -86,7 +89,7 @@ func SetupTestDB(t *testing.T) (*TestDB, func()) {
 	return &TestDB{DB: tx, Data: data}, cleanup
 }
 
-// cleanDB cleans the database
+// cleanDB cleans the database.
 func cleanDB(db *gorm.DB) {
 	tables := []string{
 		"article_tags",
@@ -97,4 +100,4 @@ func cleanDB(db *gorm.DB) {
 	for _, table := range tables {
 		db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
 	}
-} 
+}

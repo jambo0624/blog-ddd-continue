@@ -1,135 +1,141 @@
 package factory
 
 import (
-	"fmt"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
-	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
+	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 )
 
 type ArticleFactory struct {
-	sequence        int
+	BaseFactory
 	categoryFactory *CategoryFactory
 	tagFactory      *TagFactory
 }
 
 func NewArticleFactory(categoryFactory *CategoryFactory, tagFactory *TagFactory) *ArticleFactory {
 	return &ArticleFactory{
-		sequence:        2,
+		BaseFactory:     NewBaseFactory(),
 		categoryFactory: categoryFactory,
 		tagFactory:      tagFactory,
 	}
 }
 
-// BuildEntity creates an Article entity with default or custom values
-func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) (*articleEntity.Article, *categoryEntity.Category, *tagEntity.Tag) {
-	f.sequence++
+// buildDependencies creates the necessary category and tags.
+func (f *ArticleFactory) buildDependencies() (*categoryEntity.Category, []*tagEntity.Tag) {
 	category := f.categoryFactory.BuildEntity()
-	tagPtrs := f.tagFactory.BuildList(2)
-	
-	// Convert []*Tag to []Tag
+	defaultTagLength := 2
+	tags := f.tagFactory.BuildList(defaultTagLength)
+	return category, tags
+}
+
+// getTagIDs extracts IDs from tags.
+func (f *ArticleFactory) getTagIDs(tags []*tagEntity.Tag) []uint {
+	tagIDs := make([]uint, len(tags))
+	for i, tag := range tags {
+		tagIDs[i] = tag.ID
+	}
+	return tagIDs
+}
+
+func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) (
+	*articleEntity.Article,
+	*categoryEntity.Category,
+	*tagEntity.Tag,
+) {
+	seq := f.NextSequence()
+	category, tagPtrs := f.buildDependencies()
+
 	tags := make([]tagEntity.Tag, len(tagPtrs))
 	for i, t := range tagPtrs {
 		tags[i] = *t
 	}
 
 	article := &articleEntity.Article{
-		ID:         uint(f.sequence),
+		ID:         seq,
 		CategoryID: category.ID,
-		Title:      fmt.Sprintf("Test Article %d", f.sequence),
-		Content:    fmt.Sprintf("Test Content %d", f.sequence),
+		Title:      f.FormatTestName("Article"),
+		Content:    f.FormatTestName("Content"),
 		Tags:       tags,
 	}
 
-	for _, opt := range opts {
-		opt(article)
-	}
-
-	return article, category, &tags[0]
+	return ApplyOptions(article, opts), category, &tags[0]
 }
 
-// BuildCreateRequest creates a CreateArticleRequest
-func (f *ArticleFactory) BuildCreateRequest(opts ...func(*dto.CreateArticleRequest)) (*dto.CreateArticleRequest, *categoryEntity.Category, *tagEntity.Tag) {
-	f.sequence++
-	category := f.categoryFactory.BuildEntity()
-	tags := f.tagFactory.BuildList(2)
+func (f *ArticleFactory) buildRequest(isUpdate bool) interface{} {
+	category, tags := f.buildDependencies()
+	tagIDs := f.getTagIDs(tags)
 
-	tagIDs := make([]uint, len(tags))
-	for i, tag := range tags {
-		tagIDs[i] = tag.ID
+	title := f.FormatTestName("Article")
+	content := f.FormatTestName("Content")
+	if isUpdate {
+		title = f.FormatUpdatedName("Article")
+		content = f.FormatUpdatedName("Content")
 	}
 
-	req := &dto.CreateArticleRequest{
-		CategoryID: category.ID,
-		Title:      fmt.Sprintf("Test Article %d", f.sequence),
-		Content:    fmt.Sprintf("Test Content %d", f.sequence),
-		TagIDs:     tagIDs,
+	if isUpdate {
+		return &dto.UpdateArticleRequest{
+			Title:      title,
+			Content:    content,
+			CategoryID: category.ID,
+			TagIDs:     tagIDs,
+		}
 	}
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	return req, category, tags[0]
-}
-
-// BuildUpdateRequest creates an UpdateArticleRequest
-func (f *ArticleFactory) BuildUpdateRequest(opts ...func(*dto.UpdateArticleRequest)) (*dto.UpdateArticleRequest, *categoryEntity.Category, *tagEntity.Tag) {
-	f.sequence++
-	category := f.categoryFactory.BuildEntity()
-	tags := f.tagFactory.BuildList(2)
-
-	tagIDs := make([]uint, len(tags))
-	for i, tag := range tags {
-		tagIDs[i] = tag.ID
-	}
-
-	req := &dto.UpdateArticleRequest{
-		Title:      fmt.Sprintf("Test Article %d", f.sequence),
-		Content:    fmt.Sprintf("Test Content %d", f.sequence),
+	return &dto.CreateArticleRequest{
+		Title:      title,
+		Content:    content,
 		CategoryID: category.ID,
 		TagIDs:     tagIDs,
 	}
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	return req, category, tags[0]
 }
 
-// BuildList creates a list of Article entities
+func (f *ArticleFactory) BuildCreateRequest(opts ...func(*dto.CreateArticleRequest)) (
+	*dto.CreateArticleRequest,
+	*categoryEntity.Category,
+	*tagEntity.Tag,
+) {
+	category, tags := f.buildDependencies()
+	req := BuildRequest[*dto.CreateArticleRequest](false, f.buildRequest)
+	return ApplyOptions(req, opts), category, tags[0]
+}
+
+func (f *ArticleFactory) BuildUpdateRequest(opts ...func(*dto.UpdateArticleRequest)) (
+	*dto.UpdateArticleRequest,
+	*categoryEntity.Category,
+	*tagEntity.Tag,
+) {
+	category, tags := f.buildDependencies()
+	req := BuildRequest[*dto.UpdateArticleRequest](true, f.buildRequest)
+	return ApplyOptions(req, opts), category, tags[0]
+}
+
 func (f *ArticleFactory) BuildList(count int) []*articleEntity.Article {
 	articles := make([]*articleEntity.Article, count)
-	for i := 0; i < count; i++ {
+	for i := range articles {
 		articles[i], _, _ = f.BuildEntity()
 	}
 	return articles
 }
 
-// WithCategoryID sets custom category id
+// Helper methods for customization.
 func (f *ArticleFactory) WithCategoryID(categoryID uint) func(*articleEntity.Article) {
 	return func(a *articleEntity.Article) {
 		a.CategoryID = categoryID
 	}
 }
 
-// WithTags sets custom tags
 func (f *ArticleFactory) WithTags(tags []tagEntity.Tag) func(*articleEntity.Article) {
 	return func(a *articleEntity.Article) {
 		a.Tags = tags
 	}
 }
 
-// WithTitle sets custom title
 func (f *ArticleFactory) WithTitle(title string) func(*articleEntity.Article) {
 	return func(a *articleEntity.Article) {
 		a.Title = title
 	}
 }
 
-// WithContent sets custom content
 func (f *ArticleFactory) WithContent(content string) func(*articleEntity.Article) {
 	return func(a *articleEntity.Article) {
 		a.Content = content

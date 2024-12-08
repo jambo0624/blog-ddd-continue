@@ -2,13 +2,14 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"github.com/jambo0624/blog/internal/shared/application/service"
 	"github.com/jambo0624/blog/internal/shared/domain/repository"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http/dto"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http/response"
 )
 
-// EntityService interface for create/update operations
+// EntityService interface for create/update operations.
 type EntityService[T repository.Entity, Q repository.Query, C dto.RequestDTO, U dto.RequestDTO] interface {
 	Create(req *C) (*T, error)
 	Update(id uint, req *U) (*T, error)
@@ -29,7 +30,7 @@ func NewBaseHandler[T repository.Entity, Q repository.Query, C dto.RequestDTO, U
 	}
 }
 
-// Create handles POST / requests
+// Create handles POST / requests.
 func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 	var req C
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -46,7 +47,7 @@ func (h *BaseHandler[T, Q, C, U]) Create(c *gin.Context) {
 	response.Created(c, entity)
 }
 
-// Update handles PUT /:id requests
+// Update handles PUT /:id requests.
 func (h *BaseHandler[T, Q, C, U]) Update(c *gin.Context) {
 	id := ParseUintParam(c, "id")
 
@@ -65,7 +66,7 @@ func (h *BaseHandler[T, Q, C, U]) Update(c *gin.Context) {
 	response.Success(c, entity)
 }
 
-// FindByID handles GET /:id requests
+// FindByID handles GET /:id requests.
 func (h *BaseHandler[T, Q, C, U]) FindByID(c *gin.Context) {
 	id := ParseUintParam(c, "id")
 	entity, err := h.Service.FindByID(id)
@@ -76,7 +77,7 @@ func (h *BaseHandler[T, Q, C, U]) FindByID(c *gin.Context) {
 	response.Success(c, entity)
 }
 
-// FindAll handles GET / requests with query parameters
+// FindAll handles GET / requests with query parameters.
 func (h *BaseHandler[T, Q, C, U]) FindAll(c *gin.Context, buildQuery func(*gin.Context) (Q, error)) {
 	query, err := buildQuery(c)
 	if err != nil {
@@ -94,7 +95,7 @@ func (h *BaseHandler[T, Q, C, U]) FindAll(c *gin.Context, buildQuery func(*gin.C
 	response.SuccessWithMeta(c, entities, *meta)
 }
 
-// Delete handles DELETE /:id requests
+// Delete handles DELETE /:id requests.
 func (h *BaseHandler[T, Q, C, U]) Delete(c *gin.Context) {
 	id := ParseUintParam(c, "id")
 	if err := h.Service.Delete(id); err != nil {

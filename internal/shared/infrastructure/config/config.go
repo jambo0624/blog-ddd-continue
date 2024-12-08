@@ -1,15 +1,19 @@
 package config
 
 import (
-	"fmt"
-	"github.com/spf13/viper"
 	"net/url"
 	"os"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/spf13/viper"
+
+	"github.com/jambo0624/blog/internal/shared/infrastructure/errors"
 )
 
 type Config struct {
-	Database DatabaseConfig
-	Server   ServerConfig
+	Environment string // development, test, production
+	Database    DatabaseConfig
+	Server      ServerConfig
 }
 
 type DatabaseConfig struct {
@@ -32,12 +36,16 @@ func LoadConfig() (*Config, error) {
 		env = "development"
 	}
 
+	config := &Config{
+		Environment: env,
+	}
+
 	// Add all possible config paths
 	viper.AddConfigPath(".")
-	viper.AddConfigPath("../../..")  // For tests
+	viper.AddConfigPath("../../..")    // For tests
 	viper.AddConfigPath("../../../..") // For deeper test directories
-	
-	viper.SetConfigName(fmt.Sprintf(".env.%s", env))
+
+	viper.SetConfigName(".env." + env)
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 
@@ -47,22 +55,19 @@ func LoadConfig() (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if env != "production" {
-			fmt.Printf("Warning: Config file not found, using defaults. Error: %v\n", err)
+			sentry.CaptureException(err)
 			// not production environment, use default value instead of returning error
-			return &Config{
-				Database: ParseDatabaseURL(viper.GetString("DATABASE_URL")),
-				Server: ServerConfig{
-					Port: viper.GetString("SERVER_PORT"),
-				},
-			}, nil
+			config.Database = ParseDatabaseURL(viper.GetString("DATABASE_URL"))
+			config.Server = ServerConfig{
+				Port: viper.GetString("SERVER_PORT"),
+			}
+			return config, nil
 		}
-		return nil, fmt.Errorf("error reading config file: %s", err)
+		return nil, errors.ErrFailedToReadConfig
 	}
 
-	config := &Config{
-		Server: ServerConfig{
-			Port: viper.GetString("SERVER_PORT"),
-		},
+	config.Server = ServerConfig{
+		Port: viper.GetString("SERVER_PORT"),
 	}
 
 	// Use DATABASE_URL if available

@@ -1,31 +1,34 @@
 package http_test
 
 import (
-	"testing"
 	"net/http"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 
-	categoryHandler "github.com/jambo0624/blog/internal/category/interfaces/http"
 	categoryService "github.com/jambo0624/blog/internal/category/application/service"
-	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	"github.com/jambo0624/blog/internal/category/domain/entity"
-	"github.com/jambo0624/blog/tests/testutil/factory"
+	categoryHandler "github.com/jambo0624/blog/internal/category/interfaces/http"
 	"github.com/jambo0624/blog/tests/testutil"
+	"github.com/jambo0624/blog/tests/testutil/factory"
+	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 )
 
-func setupTest(t *testing.T) (*testutil.HttpTester, *mockCategory.MockCategoryRepository) {
+func setupTest(t *testing.T) (*testutil.HTTPTester, *mockCategory.MockCategoryRepository) {
+	t.Helper()
+
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	service := categoryService.NewCategoryService(mockRepo)
 	handler := categoryHandler.NewCategoryHandler(service)
 	router := categoryHandler.NewCategoryRouter(handler)
 
-	actor := testutil.NewHttpTester(t, router)
+	tester := testutil.NewHTTPTester(t, router.Register)
 
-	return actor, mockRepo
+	return tester, mockRepo
 }
 
 func TestCategoryHandler_Create(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewCategoryFactory()
 
 	req := factory.BuildCreateRequest()
@@ -38,39 +41,39 @@ func TestCategoryHandler_Create(t *testing.T) {
 		return c.Name == expectedCategory.Name && c.Slug == expectedCategory.Slug
 	})).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Post("/api/categories").
 		SeeStatus(http.StatusCreated)
 }
 
 func TestCategoryHandler_GetByID(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewCategoryFactory()
 	category := factory.BuildEntity()
 
 	mockRepo.On("FindByID", category.ID, mock.Anything).Return(category, nil)
 
-	actor.
+	tester.
 		Get("/api/categories/3", nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestCategoryHandler_List(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewCategoryFactory()
 	categories := factory.BuildList(2)
 
 	mockRepo.On("FindAll", mock.AnythingOfType("*query.CategoryQuery")).
 		Return(categories, int64(len(categories)), nil)
 
-	actor.
+	tester.
 		Get("/api/categories", nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestCategoryHandler_Update(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewCategoryFactory()
 
 	existingCategory := factory.BuildEntity()
@@ -81,18 +84,18 @@ func TestCategoryHandler_Update(t *testing.T) {
 		return c.ID == existingCategory.ID && c.Name == req.Name && c.Slug == req.Slug
 	})).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Put("/api/categories/3").
 		SeeStatus(http.StatusOK)
 }
 
 func TestCategoryHandler_Delete(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 
 	mockRepo.On("Delete", uint(1)).Return(nil)
 
-	actor.
+	tester.
 		Delete("/api/categories/1").
 		SeeStatus(http.StatusNoContent)
-} 
+}

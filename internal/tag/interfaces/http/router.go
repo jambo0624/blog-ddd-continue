@@ -6,13 +6,11 @@ import (
 
 type TagRouter struct {
 	handler *TagHandler
-	engine  *gin.Engine
 }
 
 func NewTagRouter(handler *TagHandler) *TagRouter {
 	return &TagRouter{
 		handler: handler,
-		engine:  gin.New(),
 	}
 }
 
@@ -26,7 +24,3 @@ func (r *TagRouter) Register(api *gin.RouterGroup) {
 		tags.DELETE("/:id", r.handler.Delete)
 	}
 }
-
-func (r *TagRouter) Engine() *gin.Engine {
-	return r.engine
-} 

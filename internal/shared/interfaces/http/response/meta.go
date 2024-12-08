@@ -6,20 +6,20 @@ import (
 	"github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
-// Meta standard metadata structure
+// Meta standard metadata structure.
 type Meta struct {
 	Total       int         `json:"total"`                 // Total number of records
 	Limit       int         `json:"limit,omitempty"`       // Page size
 	Offset      int         `json:"offset,omitempty"`      // Page offset
 	Page        int         `json:"page,omitempty"`        // Current page number
-	TotalPages  int         `json:"total_pages,omitempty"` // Total number of pages
+	TotalPages  int         `json:"totalPages,omitempty"`  // Total number of pages
 	Sort        string      `json:"sort,omitempty"`        // Sort field
 	Order       string      `json:"order,omitempty"`       // Sort order (asc/desc)
 	Filter      interface{} `json:"filter,omitempty"`      // Applied filters
 	Aggregation interface{} `json:"aggregation,omitempty"` // Aggregation results
 }
 
-// NewMeta creates a new Meta instance with pagination info
+// NewMeta creates a new Meta instance with pagination info.
 func NewMeta(total, limit, offset int) *Meta {
 	meta := &Meta{
 		Total:  total,
@@ -35,26 +35,26 @@ func NewMeta(total, limit, offset int) *Meta {
 	return meta
 }
 
-// WithSort adds sorting information
+// WithSort adds sorting information.
 func (m *Meta) WithSort(field, order string) *Meta {
 	m.Sort = field
 	m.Order = order
 	return m
 }
 
-// WithFilter adds filter information
+// WithFilter adds filter information.
 func (m *Meta) WithFilter(filter interface{}) *Meta {
 	m.Filter = filter
 	return m
 }
 
-// WithAggregation adds aggregation results
+// WithAggregation adds aggregation results.
 func (m *Meta) WithAggregation(aggregation interface{}) *Meta {
 	m.Aggregation = aggregation
 	return m
 }
 
-// NewMetaFromQuery creates a new Meta instance from query parameters
+// NewMetaFromQuery creates a new Meta instance from query parameters.
 func NewMetaFromQuery(total int64, baseQuery query.BaseQuery) *Meta {
 	meta := NewMeta(int(total), baseQuery.Limit, baseQuery.Offset)
 
@@ -69,4 +69,4 @@ func NewMetaFromQuery(total int64, baseQuery query.BaseQuery) *Meta {
 	}
 
 	return meta
-} 
+}

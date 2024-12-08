@@ -8,8 +8,8 @@ import (
 
 type CategoryQuery struct {
 	baseQuery.BaseQuery
-	NameLike string `json:"name_like" binding:"omitempty, max=100" validate:"omitempty,max=100"`
-	SlugLike string `json:"slug_like" binding:"omitempty, max=100" validate:"omitempty,max=100"`
+	NameLike string `binding:"omitempty, max=100" json:"nameLike" validate:"omitempty,max=100"`
+	SlugLike string `binding:"omitempty, max=100" json:"slugLike" validate:"omitempty,max=100"`
 }
 
 func NewCategoryQuery() *CategoryQuery {

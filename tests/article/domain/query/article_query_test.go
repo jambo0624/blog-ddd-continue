@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
+	"github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/domain/query"
 	"github.com/jambo0624/blog/tests/testutil"
-	"github.com/jambo0624/blog/internal/article/domain/entity"
-	"gorm.io/gorm"
 )
 
 func TestArticleQuery_Validate(t *testing.T) {
@@ -36,7 +38,7 @@ func TestArticleQuery_Validate(t *testing.T) {
 				q.WithTitleLike(strings.Repeat("a", 256))
 				return q
 			},
-			wantErr:     true,
+			wantErr: true,
 		},
 		{
 			name: "invalid content length",
@@ -45,7 +47,7 @@ func TestArticleQuery_Validate(t *testing.T) {
 				q.WithContentLike(strings.Repeat("a", 256))
 				return q
 			},
-			wantErr:     true,
+			wantErr: true,
 		},
 		{
 			name: "invalid limit",
@@ -54,7 +56,7 @@ func TestArticleQuery_Validate(t *testing.T) {
 				q.Limit = -1
 				return q
 			},
-			wantErr:     true,
+			wantErr: true,
 		},
 		{
 			name: "invalid offset",
@@ -63,7 +65,7 @@ func TestArticleQuery_Validate(t *testing.T) {
 				q.Offset = -1
 				return q
 			},
-			wantErr:     true,
+			wantErr: true,
 		},
 	}
 
@@ -71,10 +73,10 @@ func TestArticleQuery_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.query().Validate()
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -84,8 +86,8 @@ func TestArticleQuery_ApplyFilters(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		setupQuery     func() *query.ArticleQuery
+		name            string
+		setupQuery      func() *query.ArticleQuery
 		expectedClauses []string
 	}{
 		{
@@ -156,17 +158,17 @@ func TestArticleQuery_ApplyFilters(t *testing.T) {
 			q := tt.setupQuery()
 			db := testDB.DB.Model(&entity.Article{})
 			db = q.ApplyFilters(db)
-			
+
 			// use ToSQL to get the query string
 			sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 				var articles []*entity.Article
 				return tx.Find(&articles)
 			})
-			
+
 			t.Logf("Generated SQL: %s", sql)
 			for _, clause := range tt.expectedClauses {
 				assert.Contains(t, sql, clause)
 			}
 		})
 	}
-} 
+}

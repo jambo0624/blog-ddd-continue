@@ -1,40 +1,41 @@
-package validate
+package errors
 
 import "errors"
 
+// Validation errors.
 var (
-	// ID
+	// ID.
 	ErrInvalidIDFormat = errors.New("invalid id format")
 
-	// Title
+	// Title.
 	ErrTitleRequired = errors.New("title is required")
-	ErrTitleTooLong = errors.New("title too long")
+	ErrTitleTooLong  = errors.New("title too long")
 
-	// Category
+	// Category.
 	ErrCategoryRequired = errors.New("category is required")
 
-	// Content
+	// Content.
 	ErrContentRequired = errors.New("content is required")
-	ErrContentTooLong = errors.New("content too long")
+	ErrContentTooLong  = errors.New("content too long")
 
-	// Name
+	// Name.
 	ErrNameRequired = errors.New("name is required")
-	ErrNameTooLong = errors.New("name too long")
+	ErrNameTooLong  = errors.New("name too long")
 
-	// Tag
+	// Tag.
 	ErrTagAlreadyExists = errors.New("tag already exists")
 
-	// Slug
+	// Slug.
 	ErrSlugRequired = errors.New("slug is required")
-	ErrSlugTooLong = errors.New("slug too long")
+	ErrSlugTooLong  = errors.New("slug too long")
 
-	// Color
+	// Color.
 	ErrColorRequired = errors.New("color is required")
 
-	// Limit
-	ErrInvalidLimit = errors.New("invalid limit")
+	// Limit.
+	ErrInvalidLimit  = errors.New("invalid limit")
 	ErrInvalidOffset = errors.New("invalid offset")
 
-	// OrderBy
+	// OrderBy.
 	ErrInvalidOrderByField = errors.New("invalid order by field")
-) 
+)

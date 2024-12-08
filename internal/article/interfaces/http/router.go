@@ -6,11 +6,10 @@ import (
 
 type ArticleRouter struct {
 	handler *ArticleHandler
-	engine  *gin.Engine
 }
 
 func NewArticleRouter(handler *ArticleHandler) *ArticleRouter {
-	return &ArticleRouter{handler: handler, engine: gin.New()}
+	return &ArticleRouter{handler: handler}
 }
 
 func (r *ArticleRouter) Register(api *gin.RouterGroup) {
@@ -22,8 +21,4 @@ func (r *ArticleRouter) Register(api *gin.RouterGroup) {
 		articles.PUT("/:id", r.handler.Update)
 		articles.DELETE("/:id", r.handler.Delete)
 	}
-}
-
-func (r *ArticleRouter) Engine() *gin.Engine {
-	return r.engine
 }

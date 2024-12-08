@@ -3,12 +3,13 @@ package main
 import (
 	"log"
 
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	config "github.com/jambo0624/blog/internal/shared/infrastructure/config"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {

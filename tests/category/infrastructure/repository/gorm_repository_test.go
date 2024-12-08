@@ -1,20 +1,27 @@
-package repository
+package repository_test
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
 
-	"github.com/jambo0624/blog/tests/testutil"
-	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/persistence"
-	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
-	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
+	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
+	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/repository"
+	"github.com/jambo0624/blog/tests/testutil"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
-func setupTest(t *testing.T) (*testutil.TestDB, func(), categoryRepository.CategoryRepository, *factory.CategoryFactory) {
+func setupTest(t *testing.T) (
+	*testutil.TestDB,
+	func(),
+	categoryRepository.CategoryRepository,
+	*factory.CategoryFactory,
+) {
 	t.Helper()
-	
+
 	testDB, cleanup := testutil.SetupTestDB(t)
 	repo := categoryPersistence.NewGormCategoryRepository(testDB.DB)
 	factory := factory.NewCategoryFactory()
@@ -28,7 +35,7 @@ func TestGormCategoryRepository_FindByID(t *testing.T) {
 	category := testDB.Data.Categories[0]
 
 	found, err := repo.FindByID(category.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, category.Name, found.Name)
 }
 
@@ -42,7 +49,7 @@ func TestGormCategoryRepository_FindAll(t *testing.T) {
 		q.WithNameLike(name)
 
 		categories, total, err := repo.FindAll(q)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 		assert.Contains(t, categories[0].Name, name)
 	})
@@ -55,11 +62,11 @@ func TestGormCategoryRepository_Save(t *testing.T) {
 	category := factory.BuildEntity()
 
 	err := repo.Save(category)
-	assert.NoError(t, err)
-	assert.NotZero(t, category.ID)
+	require.NoError(t, err)
+	require.NotZero(t, category.ID)
 
 	found, err := repo.FindByID(category.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, category.Name, found.Name)
 }
 
@@ -71,29 +78,29 @@ func TestGormCategoryRepository_Update(t *testing.T) {
 
 	category.Name = "Updated Name"
 	err := repo.Update(category)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	found, err := repo.FindByID(category.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, category.Name, found.Name)
 }
 
 func TestGormCategoryRepository_Delete(t *testing.T) {
 	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
-	
+
 	category := testDB.Data.Categories[0]
 
 	err := repo.Delete(category.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var found categoryEntity.Category
 	err = testDB.DB.Unscoped().First(&found, category.ID).Error
-	assert.NoError(t, err)
-	assert.NotNil(t, found.DeletedAt)
+	require.NoError(t, err)
+	require.NotNil(t, found.DeletedAt)
 
 	_, err = repo.FindByID(category.ID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestGormCategoryRepository_FindAll_WithFilters(t *testing.T) {
@@ -121,18 +128,16 @@ func TestGormCategoryRepository_FindAll_WithFilters(t *testing.T) {
 			expectedCount: 1,
 		},
 		{
-			name: "no filter",
-			buildQuery: func() *categoryQuery.CategoryQuery {
-				return categoryQuery.NewCategoryQuery()
-			},
-			expectedCount: 4, // includes default categories
+			name:          "no filter",
+			buildQuery:    categoryQuery.NewCategoryQuery,
+			expectedCount: 4,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			categories, count, err := repo.FindAll(tt.buildQuery())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCount, count)
 			assert.Len(t, categories, int(tt.expectedCount))
 		})

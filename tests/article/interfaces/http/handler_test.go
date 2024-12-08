@@ -1,21 +1,28 @@
 package http_test
 
 import (
-	"testing"
-	"net/http"
-	"github.com/stretchr/testify/mock"
 	"fmt"
+	"net/http"
+	"testing"
 
-	articleHandler "github.com/jambo0624/blog/internal/article/interfaces/http"
+	"github.com/stretchr/testify/mock"
+
 	articleService "github.com/jambo0624/blog/internal/article/application/service"
+	articleHandler "github.com/jambo0624/blog/internal/article/interfaces/http"
+	"github.com/jambo0624/blog/tests/testutil"
+	"github.com/jambo0624/blog/tests/testutil/factory"
 	mockArticle "github.com/jambo0624/blog/tests/testutil/mock/article"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
-	"github.com/jambo0624/blog/tests/testutil/factory"
-	"github.com/jambo0624/blog/tests/testutil"
 )
 
-func setupTest(t *testing.T) (*testutil.HttpTester, *mockArticle.MockArticleRepository, *mockCategory.MockCategoryRepository, *mockTag.MockTagRepository) {
+func setupTest(t *testing.T) (
+	*testutil.HTTPTester,
+	*mockArticle.MockArticleRepository,
+	*mockCategory.MockCategoryRepository,
+	*mockTag.MockTagRepository,
+) {
+	t.Helper()
 	mockArticleRepo := new(mockArticle.MockArticleRepository)
 	mockCategoryRepo := new(mockCategory.MockCategoryRepository)
 	mockTagRepo := new(mockTag.MockTagRepository)
@@ -24,13 +31,13 @@ func setupTest(t *testing.T) (*testutil.HttpTester, *mockArticle.MockArticleRepo
 	handler := articleHandler.NewArticleHandler(service)
 	router := articleHandler.NewArticleRouter(handler)
 
-	actor := testutil.NewHttpTester(t, router)
+	tester := testutil.NewHTTPTester(t, router.Register)
 
-	return actor, mockArticleRepo, mockCategoryRepo, mockTagRepo
+	return tester, mockArticleRepo, mockCategoryRepo, mockTagRepo
 }
 
 func TestArticleHandler_Create(t *testing.T) {
-	actor, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
+	tester, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
 
 	categoryFactory := factory.NewCategoryFactory()
 	tagFactory := factory.NewTagFactory()
@@ -42,39 +49,39 @@ func TestArticleHandler_Create(t *testing.T) {
 	mockTagRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(tag, nil)
 	mockArticleRepo.On("Save", mock.AnythingOfType("*entity.Article")).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Post("/api/articles").
 		SeeStatus(http.StatusCreated)
 }
 
 func TestArticleHandler_GetByID(t *testing.T) {
-	actor, mockArticleRepo, _, _ := setupTest(t)
+	tester, mockArticleRepo, _, _ := setupTest(t)
 	articleFactory := factory.NewArticleFactory(factory.NewCategoryFactory(), factory.NewTagFactory())
 	article, _, _ := articleFactory.BuildEntity()
 
 	mockArticleRepo.On("FindByID", article.ID, mock.Anything).Return(article, nil)
 
-	actor.
+	tester.
 		Get(fmt.Sprintf("/api/articles/%d", article.ID), nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestArticleHandler_List(t *testing.T) {
-	actor, mockArticleRepo, _, _ := setupTest(t)
+	tester, mockArticleRepo, _, _ := setupTest(t)
 	articleFactory := factory.NewArticleFactory(factory.NewCategoryFactory(), factory.NewTagFactory())
 	articles := articleFactory.BuildList(2)
 
 	mockArticleRepo.On("FindAll", mock.AnythingOfType("*query.ArticleQuery")).
 		Return(articles, int64(len(articles)), nil)
 
-	actor.
+	tester.
 		Get("/api/articles", nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestArticleHandler_Update(t *testing.T) {
-	actor, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
+	tester, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
 
 	categoryFactory := factory.NewCategoryFactory()
 	tagFactory := factory.NewTagFactory()
@@ -89,18 +96,18 @@ func TestArticleHandler_Update(t *testing.T) {
 	mockTagRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(tag, nil)
 	mockArticleRepo.On("Update", mock.AnythingOfType("*entity.Article")).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Put(fmt.Sprintf("/api/articles/%d", article.ID)).
 		SeeStatus(http.StatusOK)
 }
 
 func TestArticleHandler_Delete(t *testing.T) {
-	actor, mockArticleRepo, _, _ := setupTest(t)
+	tester, mockArticleRepo, _, _ := setupTest(t)
 
 	mockArticleRepo.On("Delete", uint(1)).Return(nil)
 
-	actor.
+	tester.
 		Delete("/api/articles/1").
 		SeeStatus(http.StatusNoContent)
 }

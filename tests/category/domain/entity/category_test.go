@@ -4,38 +4,40 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jambo0624/blog/internal/category/domain/entity"
 	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
+	"github.com/jambo0624/blog/internal/shared/domain/errors"
 )
 
 func TestNewCategory(t *testing.T) {
 	tests := []struct {
-		name        string
+		name         string
 		categoryName string
-		slug        string
-		wantErr     bool
-		expectedErr error
+		slug         string
+		wantErr      bool
+		expectedErr  error
 	}{
 		{
-			name:        "valid category",
+			name:         "valid category",
 			categoryName: "Test Category",
-			slug:        "test-category",
-			wantErr:     false,
+			slug:         "test-category",
+			wantErr:      false,
 		},
 		{
-			name:        "empty name",
+			name:         "empty name",
 			categoryName: "",
-			slug:        "test-category",
-			wantErr:     true,
-			expectedErr: validate.ErrNameRequired,
+			slug:         "test-category",
+			wantErr:      true,
+			expectedErr:  errors.ErrNameRequired,
 		},
 		{
-			name:        "empty slug",
+			name:         "empty slug",
 			categoryName: "Test Category",
-			slug:        "",
-			wantErr:     true,
-			expectedErr: validate.ErrSlugRequired,
+			slug:         "",
+			wantErr:      true,
+			expectedErr:  errors.ErrSlugRequired,
 		},
 	}
 
@@ -46,7 +48,7 @@ func TestNewCategory(t *testing.T) {
 				assert.ErrorIs(t, err, tt.expectedErr)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.categoryName, category.Name)
 			assert.Equal(t, tt.slug, category.Slug)
 		})
@@ -64,4 +66,4 @@ func TestCategory_Update(t *testing.T) {
 
 	assert.Equal(t, "Updated", category.Name)
 	assert.Equal(t, "updated", category.Slug)
-} 
+}

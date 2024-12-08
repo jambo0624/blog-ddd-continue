@@ -2,6 +2,7 @@ package repository
 
 import "github.com/jambo0624/blog/internal/shared/domain/query"
 
+// Entity represents a domain entity.
 type Entity interface {
 	GetID() uint
 }

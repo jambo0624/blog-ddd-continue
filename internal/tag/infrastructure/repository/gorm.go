@@ -1,11 +1,12 @@
 package persistence
 
 import (
+	"gorm.io/gorm"
+
+	persistence "github.com/jambo0624/blog/internal/shared/infrastructure/persistence"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-	"gorm.io/gorm"
-	persistence "github.com/jambo0624/blog/internal/shared/infrastructure/persistence"
 )
 
 type GormTagRepository struct {

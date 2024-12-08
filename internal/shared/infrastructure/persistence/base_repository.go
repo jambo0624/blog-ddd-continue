@@ -3,9 +3,17 @@ package persistence
 import (
 	"time"
 
-	"github.com/jambo0624/blog/internal/shared/domain/repository"
 	"gorm.io/gorm"
+
+	"github.com/jambo0624/blog/internal/shared/domain/repository"
+	infraErrors "github.com/jambo0624/blog/internal/shared/infrastructure/errors"
 )
+
+// QueryFilter defines the interface for applying filters to a query.
+type QueryFilter interface {
+	ApplyFilters(db *gorm.DB) *gorm.DB
+	GetPreloadAssociations() []string
+}
 
 type BaseGormRepository[T repository.Entity, Q repository.Query] struct {
 	db *gorm.DB
@@ -40,23 +48,26 @@ func (r *BaseGormRepository[T, Q]) FindAll(q Q) ([]*T, int64, error) {
 
 	// Build base query
 	query := r.db.Model(new(T))
+	// Check if the query implements the QueryFilter interface
+	filterer, ok := any(q).(QueryFilter)
+	if !ok {
+		return nil, 0, infraErrors.ErrInvalidQueryType
+	}
 
 	// Apply filters (to be implemented by child repositories)
-	if filterer, ok := any(q).(interface{ ApplyFilters(*gorm.DB) *gorm.DB }); ok {
-		query = filterer.ApplyFilters(query)
-	}
+	query = filterer.ApplyFilters(query)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Apply preloads
-	for _, preload := range any(q).(interface{ GetPreloadAssociations() []string }).GetPreloadAssociations() {
+	for _, preload := range filterer.GetPreloadAssociations() {
 		query = query.Preload(preload)
 	}
 
-	baseQuery := q.GetBaseQuery()	
+	baseQuery := q.GetBaseQuery()
 
 	// Apply pagination and sorting
 	if baseQuery.Limit > 0 {
@@ -81,7 +92,7 @@ func (r *BaseGormRepository[T, Q]) Update(entity *T) error {
 	return r.db.Save(entity).Error
 }
 
-// Delete implements soft delete
+// Delete implements soft delete.
 func (r *BaseGormRepository[T, Q]) Delete(id uint) error {
 	return r.db.Model(new(T)).Where("id = ?", id).Update("deleted_at", time.Now()).Error
 }

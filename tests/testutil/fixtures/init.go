@@ -8,14 +8,16 @@ import (
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 )
 
-// TestData includes all test data
+const InitFixturesLength = uint(2)
+
+// TestData includes all test data.
 type TestData struct {
 	Categories []*categoryEntity.Category
 	Tags       []*tagEntity.Tag
 	Articles   []*articleEntity.Article
 }
 
-// LoadFixtures loads test data
+// LoadFixtures loads test data.
 func LoadFixtures(db *gorm.DB) (*TestData, error) {
 	data := &TestData{}
 
@@ -43,13 +45,13 @@ func LoadFixtures(db *gorm.DB) (*TestData, error) {
 	articles := []*articleEntity.Article{
 		{
 			CategoryID: categories[0].ID,
-			Title:     "Test Article 1",
-			Content:   "Content 1",
+			Title:      "Test Article 1",
+			Content:    "Content 1",
 		},
 		{
 			CategoryID: categories[1].ID,
-			Title:     "Test Article 2",
-			Content:   "Content 2",
+			Title:      "Test Article 2",
+			Content:    "Content 2",
 		},
 	}
 	if err := db.Create(&articles).Error; err != nil {

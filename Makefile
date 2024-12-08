@@ -1,4 +1,4 @@
-.PHONY: all build test clean run migrate lint mock
+.PHONY: all build run-test clean run deps init-db migrate migrate-test lint build-linux build-windows dev test prod
 
 # Go parameters
 GOCMD=go
@@ -8,19 +8,20 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 BINARY_NAME=blog-server
 MAIN_PATH=cmd/main.go
+MIGRATE_PATH=cmd/migrate/main.go
 
 # Build parameters
 BUILD_DIR=bin
 BINARY_UNIX=$(BUILD_DIR)/$(BINARY_NAME)_unix
 BINARY_WINDOWS=$(BUILD_DIR)/$(BINARY_NAME).exe
 
-all: test build
+all: run-test build
 
 build:
 	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 
-test:
-	$(GOTEST) -v -race -cover ./internal/... ./tests/...
+run-test:
+	$(GOTEST) -v -race -cover ./tests/...
 
 clean:
 	$(GOCMD) clean
@@ -34,22 +35,21 @@ deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
-# generate mock files
-mock:
-	mockery --all --keeptree
-
 # database init
-db-init:
-	DB_USER=$${DB_USER:-blog_user} \
-	DB_PASSWORD=$${DB_PASSWORD:-your_default_password} \
-	psql -U postgres -f database/init.sql 
+DB_USER ?= blog_user
+DB_PASSWORD ?= your_default_password
+
+init-db:
+	DB_USER=$${DB_USER} \
+	DB_PASSWORD=$${DB_PASSWORD} \
+	psql -U postgres -f database/init.sql
 
 # execute migrations
 migrate:
-	$(GOCMD) run cmd/migrate/main.go
+	$(GOCMD) run $(MIGRATE_PATH)
 
 migrate-test:
-	GO_ENV=test $(GOCMD) run cmd/migrate/main.go
+	GO_ENV=test $(GOCMD) run $(MIGRATE_PATH)
 
 # run code lint
 lint:
@@ -67,35 +67,29 @@ dev:
 	GO_ENV=development $(GOCMD) run $(MAIN_PATH)
 
 # run in test environment
-test-env:
+test:
 	GO_ENV=test $(GOCMD) run $(MAIN_PATH)
 
 # run in production environment
 prod:
 	GO_ENV=production $(GOCMD) run $(MAIN_PATH)
 
-# Docker related commands
-docker-build:
-	docker build -t $(BINARY_NAME) .
-
-docker-run:
-	docker run -p 8080:8080 $(BINARY_NAME)
-
 # help information
 help:
-	@echo "Make commands:"
-	@echo "make build          - Build the application"
-	@echo "make test           - Run tests"
-	@echo "make clean          - Clean build files"
-	@echo "make run            - Run the application"
-	@echo "make deps           - Download and tidy dependencies"
-	@echo "make db-init        - Initialize database"
-	@echo "make mock           - Generate mock files"
-	@echo "make migrate        - Run database migrations"
-	@echo "make migrate-test   - Run database migrations in test environment"
-	@echo "make lint           - Run linter"
-	@echo "make dev            - Run in development mode"
-	@echo "make test-env       - Run in test environment"
-	@echo "make prod           - Run in production mode"
-	@echo "make docker-build   - Build Docker image"
-	@echo "make docker-run     - Run Docker container" 
+	@echo "Usage: make <target>"
+	@echo "Targets:"
+	@echo "  all          	Build and run tests"
+	@echo "  build        	Build the application"
+	@echo "  run-test     	Run tests"
+	@echo "  clean        	Clean the build directory"
+	@echo "  run          	Run the application, default is development environment"
+	@echo "  deps         	Download dependencies"
+	@echo "  init-db      	Initialize the database"
+	@echo "  migrate      	Execute migrations"
+	@echo "  migrate-test		Execute migrations in test environment"
+	@echo "  lint         	Run code lint"
+	@echo "  build-linux  	Build the application for Linux"
+	@echo "  build-windows	Build the application for Windows"
+	@echo "  dev          	Run the application in development environment"
+	@echo "  test         	Run the application in test environment"
+	@echo "  prod         	Run the application in production environment"

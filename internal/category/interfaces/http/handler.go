@@ -2,24 +2,30 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+
 	categoryService "github.com/jambo0624/blog/internal/category/application/service"
-	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/interfaces/http"
-	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
-	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
+	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
+	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
+	"github.com/jambo0624/blog/internal/shared/domain/constants"
+	"github.com/jambo0624/blog/internal/shared/domain/errors"
+	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 )
 
 type CategoryHandler struct {
-	*http.BaseHandler[categoryEntity.Category, *categoryQuery.CategoryQuery, dto.CreateCategoryRequest, dto.UpdateCategoryRequest]
+	*http.BaseHandler[
+		categoryEntity.Category,
+		*categoryQuery.CategoryQuery,
+		dto.CreateCategoryRequest,
+		dto.UpdateCategoryRequest,
+	]
 }
 
 func NewCategoryHandler(cs *categoryService.CategoryService) *CategoryHandler {
-	baseHandler := http.NewBaseHandler(cs.BaseService, cs	)
+	baseHandler := http.NewBaseHandler(cs.BaseService, cs)
 	return &CategoryHandler{
 		BaseHandler: baseHandler,
-  }
+	}
 }
 
 func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQuery, error) {
@@ -32,23 +38,23 @@ func (h *CategoryHandler) buildQuery(c *gin.Context) (*categoryQuery.CategoryQue
 	} else if ids != nil {
 		q.WithIDs(ids)
 	}
-    
+
 	// Parse name
 	if name := c.Query("name"); name != "" {
 		if len(name) > constants.MaxNameLength {
-			return nil, validate.ErrNameTooLong
+			return nil, errors.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}
-    
+
 	// Parse slug
 	if slug := c.Query("slug"); slug != "" {
 		if len(slug) > constants.MaxSlugLength {
-			return nil, validate.ErrSlugTooLong
+			return nil, errors.ErrSlugTooLong
 		}
 		q.WithSlugLike(slug)
 	}
-    
+
 	// Build pagination
 	if limit, offset, err := builder.BuildPagination(c, q.Limit, q.Offset); err != nil {
 		return nil, err

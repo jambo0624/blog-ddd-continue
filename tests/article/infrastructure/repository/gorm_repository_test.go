@@ -1,20 +1,22 @@
-package repository
+package repository_test
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
 
-	"github.com/jambo0624/blog/tests/testutil"
-	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/persistence"
-	articleRepository "github.com/jambo0624/blog/internal/article/domain/repository"
-	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
+	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
+	articleRepository "github.com/jambo0624/blog/internal/article/domain/repository"
+	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/repository"
+	"github.com/jambo0624/blog/tests/testutil"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func setupTest(t *testing.T) (*testutil.TestDB, func(), articleRepository.ArticleRepository, *factory.ArticleFactory) {
 	t.Helper()
-	
+
 	testDB, cleanup := testutil.SetupTestDB(t)
 	repo := articlePersistence.NewGormArticleRepository(testDB.DB)
 	categoryFactory := factory.NewCategoryFactory()
@@ -31,7 +33,7 @@ func TestGormArticleRepository_FindByID(t *testing.T) {
 	article := testDB.Data.Articles[0]
 
 	found, err := repo.FindByID(article.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, article.Title, found.Title)
 	assert.Equal(t, article.Content, found.Content)
 	assert.Equal(t, article.CategoryID, found.CategoryID)
@@ -46,7 +48,7 @@ func TestGormArticleRepository_FindAll(t *testing.T) {
 		q.WithCategoryID(testDB.Data.Categories[0].ID)
 
 		articles, total, err := repo.FindAll(q)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 		assert.Equal(t, testDB.Data.Articles[0].Title, articles[0].Title)
 	})
@@ -57,7 +59,7 @@ func TestGormArticleRepository_FindAll(t *testing.T) {
 		q.PreloadAssociations = []string{"Tags"}
 
 		articles, total, err := repo.FindAll(q)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 		assert.Len(t, articles, 1)
 		assert.Equal(t, testDB.Data.Articles[0].Title, articles[0].Title)
@@ -69,27 +71,27 @@ func TestGormArticleRepository_FindAll(t *testing.T) {
 func TestGormArticleRepository_Save(t *testing.T) {
 	testDB, cleanup, repo, factory := setupTest(t)
 	defer cleanup()
-	
+
 	// Build Entity, contains 2 tags
 	article, category, tag := factory.BuildEntity()
 
 	// Create Category
 	err := testDB.DB.Create(category).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create Tag
 	err = testDB.DB.Create(tag).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Save Article
 	err = repo.Save(article)
-	assert.NoError(t, err)
-	assert.NotZero(t, article.ID)
+	require.NoError(t, err)
+	require.NotZero(t, article.ID)
 
 	// Verify saved article
 	preloads := []string{"Tags", "Category"}
 	found, err := repo.FindByID(article.ID, preloads...)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, article.Title, found.Title)
 	assert.Equal(t, article.Content, found.Content)
 	assert.Equal(t, category.ID, found.CategoryID)
@@ -105,10 +107,10 @@ func TestGormArticleRepository_Update(t *testing.T) {
 
 	article.Title = "Updated Title"
 	err := repo.Update(article)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	found, err := repo.FindByID(article.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Updated Title", found.Title)
 }
 
@@ -119,15 +121,70 @@ func TestGormArticleRepository_Delete(t *testing.T) {
 	article := testDB.Data.Articles[0]
 
 	err := repo.Delete(article.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var found *articleEntity.Article
 	err = testDB.DB.Unscoped().First(&found, article.ID).Error
-	assert.NoError(t, err)
-	assert.NotNil(t, found.DeletedAt)
+	require.NoError(t, err)
+	require.NotNil(t, found.DeletedAt)
 
 	_, err = repo.FindByID(article.ID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
+}
+
+// buildTestCase is a helper function to create test cases.
+func buildTestCase(
+	t *testing.T,
+	name string,
+	buildQueryFn func() *articleQuery.ArticleQuery,
+	expectedCount int64,
+	validate func(t *testing.T, articles []*articleEntity.Article),
+) struct {
+	name          string
+	buildQuery    func() *articleQuery.ArticleQuery
+	expectedCount int64
+	validate      func(t *testing.T, articles []*articleEntity.Article)
+} {
+	t.Helper()
+	return struct {
+		name          string
+		buildQuery    func() *articleQuery.ArticleQuery
+		expectedCount int64
+		validate      func(t *testing.T, articles []*articleEntity.Article)
+	}{
+		name:          name,
+		buildQuery:    buildQueryFn,
+		expectedCount: expectedCount,
+		validate:      validate,
+	}
+}
+
+// buildFilterTestCase creates a test case for simple filter tests.
+func buildFilterTestCase[T any](
+	t *testing.T,
+	name string,
+	filterValue T,
+	buildFilterFn func(T) func(*articleQuery.ArticleQuery),
+	validate func(t *testing.T, articles []*articleEntity.Article),
+	expectedCount int64,
+) struct {
+	name          string
+	buildQuery    func() *articleQuery.ArticleQuery
+	expectedCount int64
+	validate      func(t *testing.T, articles []*articleEntity.Article)
+} {
+	t.Helper()
+	return buildTestCase(
+		t,
+		name,
+		func() *articleQuery.ArticleQuery {
+			q := articleQuery.NewArticleQuery()
+			buildFilterFn(filterValue)(q)
+			return q
+		},
+		expectedCount,
+		validate,
+	)
 }
 
 func TestGormArticleRepository_FindAll_WithFilters(t *testing.T) {
@@ -146,111 +203,125 @@ func TestGormArticleRepository_FindAll_WithFilters(t *testing.T) {
 
 	// Create categories first
 	err := testDB.DB.Create(category1).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = testDB.DB.Create(category2).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create tags
 	err = testDB.DB.Create(tag1).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = testDB.DB.Create(tag2).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create articles
 	err = testDB.DB.Create(article1).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = testDB.DB.Create(article2).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name          string
 		buildQuery    func() *articleQuery.ArticleQuery
 		expectedCount int64
-		
 		validate      func(t *testing.T, articles []*articleEntity.Article)
 	}{
-		{
-			name: "filter by title",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				q := articleQuery.NewArticleQuery()
-				q.WithTitleLike("Test1")
-				return q
+		buildFilterTestCase[string](
+			t,
+			"filter by title",
+			"Test1",
+			func(value string) func(*articleQuery.ArticleQuery) {
+				return func(q *articleQuery.ArticleQuery) {
+					q.WithTitleLike(value)
+				}
 			},
-			expectedCount: 1,
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
 				assert.Equal(t, "Test1", articles[0].Title)
 			},
-		},
-		{
-			name: "filter by content",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				q := articleQuery.NewArticleQuery()
-				q.WithContentLike("Content2")
-				return q
+			1,
+		),
+		buildFilterTestCase[string](
+			t,
+			"filter by content",
+			"Content2",
+			func(value string) func(*articleQuery.ArticleQuery) {
+				return func(q *articleQuery.ArticleQuery) {
+					q.WithContentLike(value)
+				}
 			},
-			expectedCount: 1,
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
-				assert.Equal(t, "Content2", articles[0].Content)
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
+				assert.Equal(t, "Test2", articles[0].Title)
 			},
-		},
-		{
-			name: "filter by category",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				q := articleQuery.NewArticleQuery()
-				q.WithCategoryID(article1.CategoryID)
-				return q
+			1,
+		),
+		buildFilterTestCase[uint](
+			t,
+			"filter by category",
+			article1.CategoryID,
+			func(value uint) func(*articleQuery.ArticleQuery) {
+				return func(q *articleQuery.ArticleQuery) {
+					q.WithCategoryID(value)
+				}
 			},
-			expectedCount: 1,
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
 				assert.Equal(t, article1.CategoryID, articles[0].CategoryID)
 			},
-		},
-		{
-			name: "filter by tags",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				q := articleQuery.NewArticleQuery()
-				q.WithTagIDs([]uint{article1.Tags[0].ID})
-				return q
+			1,
+		),
+		buildFilterTestCase[uint](
+			t,
+			"filter by tags",
+			article1.Tags[0].ID,
+			func(value uint) func(*articleQuery.ArticleQuery) {
+				return func(q *articleQuery.ArticleQuery) {
+					q.WithTagIDs([]uint{value})
+				}
 			},
-			expectedCount: 1,
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
-				assert.Contains(t, articles[0].Tags, article1.Tags[0])
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
+				assert.Equal(t, article1.Tags[0].ID, articles[0].Tags[0].ID)
 			},
-		},
-		{
-			name: "with multiple filters",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				q := articleQuery.NewArticleQuery()
-				q.WithTitleLike("Test")
-				q.WithCategoryID(article1.CategoryID)
-				return q
+			1,
+		),
+		buildFilterTestCase[string](
+			t,
+			"with multiple filters",
+			"Test",
+			func(value string) func(*articleQuery.ArticleQuery) {
+				return func(q *articleQuery.ArticleQuery) {
+					q.WithTitleLike(value)
+					q.WithCategoryID(article1.CategoryID)
+				}
 			},
-			expectedCount: 1,
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
+				assert.Equal(t, article1.Title, articles[0].Title)
 				assert.Equal(t, article1.CategoryID, articles[0].CategoryID)
-				assert.Contains(t, articles[0].Title, "Test")
 			},
-		},
-		{
-			name: "no filter",
-			buildQuery: func() *articleQuery.ArticleQuery {
-				return articleQuery.NewArticleQuery()
-			},
-			expectedCount: 4, // includes default articles
-			validate: func(t *testing.T, articles []*articleEntity.Article) {
+			1,
+		),
+		buildTestCase(
+			t,
+			"no filter",
+			articleQuery.NewArticleQuery,
+			4, // includes default articles
+			func(t *testing.T, articles []*articleEntity.Article) {
+				t.Helper()
 				assert.Len(t, articles, 4)
 			},
-		},
+		),
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			articles, count, err := repo.FindAll(tt.buildQuery())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCount, count)
 			if tt.validate != nil {
 				tt.validate(t, articles)
 			}
 		})
 	}
-} 
+}

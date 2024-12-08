@@ -1,31 +1,34 @@
 package http_test
 
 import (
-	"testing"
 	"net/http"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 
-	tagHandler "github.com/jambo0624/blog/internal/tag/interfaces/http"
 	tagService "github.com/jambo0624/blog/internal/tag/application/service"
-	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
 	"github.com/jambo0624/blog/internal/tag/domain/entity"
-	"github.com/jambo0624/blog/tests/testutil/factory"
+	tagHandler "github.com/jambo0624/blog/internal/tag/interfaces/http"
 	"github.com/jambo0624/blog/tests/testutil"
+	"github.com/jambo0624/blog/tests/testutil/factory"
+	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
 )
 
-func setupTest(t *testing.T) (*testutil.HttpTester, *mockTag.MockTagRepository) {
+func setupTest(t *testing.T) (*testutil.HTTPTester, *mockTag.MockTagRepository) {
+	t.Helper()
+
 	mockRepo := new(mockTag.MockTagRepository)
 	service := tagService.NewTagService(mockRepo)
 	handler := tagHandler.NewTagHandler(service)
 	router := tagHandler.NewTagRouter(handler)
 
-	actor := testutil.NewHttpTester(t, router)
+	tester := testutil.NewHTTPTester(t, router.Register)
 
-	return actor, mockRepo
+	return tester, mockRepo
 }
 
 func TestTagHandler_Create(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewTagFactory()
 
 	req := factory.BuildCreateRequest()
@@ -38,39 +41,39 @@ func TestTagHandler_Create(t *testing.T) {
 		return t.Name == expectedTag.Name && t.Color == expectedTag.Color
 	})).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Post("/api/tags").
 		SeeStatus(http.StatusCreated)
 }
 
 func TestTagHandler_GetByID(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewTagFactory()
 	tag := factory.BuildEntity()
 
 	mockRepo.On("FindByID", tag.ID, mock.Anything).Return(tag, nil)
 
-	actor.
+	tester.
 		Get("/api/tags/3", nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestTagHandler_List(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewTagFactory()
 	tags := factory.BuildList(2)
 
 	mockRepo.On("FindAll", mock.AnythingOfType("*query.TagQuery")).
 		Return(tags, int64(len(tags)), nil)
 
-	actor.
+	tester.
 		Get("/api/tags", nil).
 		SeeStatus(http.StatusOK)
 }
 
 func TestTagHandler_Update(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 	factory := factory.NewTagFactory()
 
 	existingTag := factory.BuildEntity()
@@ -81,18 +84,18 @@ func TestTagHandler_Update(t *testing.T) {
 		return t.ID == existingTag.ID && t.Name == req.Name && t.Color == req.Color
 	})).Return(nil)
 
-	actor.
+	tester.
 		WithJSONBody(req).
 		Put("/api/tags/3").
 		SeeStatus(http.StatusOK)
 }
 
 func TestTagHandler_Delete(t *testing.T) {
-	actor, mockRepo := setupTest(t)
+	tester, mockRepo := setupTest(t)
 
 	mockRepo.On("Delete", uint(1)).Return(nil)
 
-	actor.
+	tester.
 		Delete("/api/tags/1").
 		SeeStatus(http.StatusNoContent)
-} 
+}

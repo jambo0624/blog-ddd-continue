@@ -2,8 +2,9 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
+	"github.com/jambo0624/blog/internal/shared/domain/errors"
 	"github.com/jambo0624/blog/internal/shared/interfaces/http"
 	"github.com/jambo0624/blog/internal/tag/application/service"
 	"github.com/jambo0624/blog/internal/tag/domain/entity"
@@ -22,7 +23,7 @@ func NewTagHandler(s *service.TagService) *TagHandler {
 	}
 }
 
-// Only need to implement buildQuery method
+// Only need to implement buildQuery method.
 func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
 	q := tagQuery.NewTagQuery()
 	builder := http.NewBaseQueryBuilder()
@@ -37,7 +38,7 @@ func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
 	// Parse name
 	if name := c.Query("name"); name != "" {
 		if len(name) > constants.MaxNameLength {
-			return nil, validate.ErrNameTooLong
+			return nil, errors.ErrNameTooLong
 		}
 		q.WithNameLike(name)
 	}
@@ -62,7 +63,7 @@ func (h *TagHandler) buildQuery(c *gin.Context) (*tagQuery.TagQuery, error) {
 	return q, nil
 }
 
-// FindAll overrides BaseHandler.FindAll to use buildQuery
+// FindAll overrides BaseHandler.FindAll to use buildQuery.
 func (h *TagHandler) FindAll(c *gin.Context) {
 	h.BaseHandler.FindAll(c, h.buildQuery)
 }

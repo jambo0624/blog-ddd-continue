@@ -1,13 +1,13 @@
 package dto
 
 type CreateTagRequest struct {
-	Name  string `json:"name" binding:"required,max=50"`
-	Color string `json:"color" binding:"required,hexcolor"`
+	Name  string `binding:"required,max=50"   json:"name"`
+	Color string `binding:"required,hexcolor" json:"color"`
 }
 
 type UpdateTagRequest struct {
-	Name  string `json:"name" binding:"omitempty,max=100"`
-	Color string `json:"color" binding:"omitempty,hexcolor"`
+	Name  string `binding:"omitempty,max=100"  json:"name"`
+	Color string `binding:"omitempty,hexcolor" json:"color"`
 }
 
 func (r CreateTagRequest) Validate() error {

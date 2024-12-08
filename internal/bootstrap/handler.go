@@ -18,4 +18,4 @@ func SetupHandlers(services *Services) *Handlers {
 		Category: categoryHttp.NewCategoryHandler(services.Category),
 		Tag:      tagHttp.NewTagHandler(services.Tag),
 	}
-} 
+}

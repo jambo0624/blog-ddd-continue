@@ -6,19 +6,19 @@ import (
 	baseQuery "github.com/jambo0624/blog/internal/shared/domain/query"
 )
 
-// Preload constants for Article queries
+// Preload constants for Article queries.
 const (
 	PreloadCategory = "Category"
 	PreloadTags     = "Tags"
 )
-	
+
 type ArticleQuery struct {
 	baseQuery.BaseQuery
-	CategoryID          *uint  `json:"category_id" binding:"omitempty" validate:"omitempty,gt=0"`
-	TagIDs              []uint `json:"tag_ids" binding:"omitempty" validate:"omitempty,dive,gt=0"`
-	TitleLike           string `json:"title_like" binding:"omitempty" validate:"omitempty,max=255"`
-	ContentLike         string `json:"content_like" binding:"omitempty, max=255" validate:"omitempty,max=255"`
-	PreloadAssociations []string `json:"preload_associations" binding:"omitempty"`
+	CategoryID          *uint    `binding:"omitempty"          json:"categoryId"          validate:"omitempty,gt=0"`
+	TagIDs              []uint   `binding:"omitempty"          json:"tagIds"              validate:"omitempty,dive,gt=0"`
+	TitleLike           string   `binding:"omitempty"          json:"titleLike"           validate:"omitempty,max=255"`
+	ContentLike         string   `binding:"omitempty, max=255" json:"contentLike"         validate:"omitempty,max=255"`
+	PreloadAssociations []string `binding:"omitempty"          json:"preloadAssociations"`
 }
 
 func NewArticleQuery() *ArticleQuery {
@@ -30,21 +30,25 @@ func NewArticleQuery() *ArticleQuery {
 
 func (q *ArticleQuery) WithCategoryID(id uint) *ArticleQuery {
 	q.CategoryID = &id
+
 	return q
 }
 
 func (q *ArticleQuery) WithTagIDs(ids []uint) *ArticleQuery {
 	q.TagIDs = ids
+
 	return q
 }
 
 func (q *ArticleQuery) WithTitleLike(title string) *ArticleQuery {
 	q.TitleLike = title
+
 	return q
 }
 
 func (q *ArticleQuery) WithContentLike(content string) *ArticleQuery {
 	q.ContentLike = content
+
 	return q
 }
 
@@ -64,7 +68,7 @@ func (q *ArticleQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
 	if q.CategoryID != nil {
 		db = db.Where("category_id = ?", q.CategoryID)
 	}
-	
+
 	if len(q.TagIDs) > 0 {
 		db = db.Joins("LEFT JOIN article_tags ON articles.id = article_tags.article_id").
 			Where("article_tags.tag_id IN ?", q.TagIDs).
@@ -82,8 +86,7 @@ func (q *ArticleQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
 	return db
 }
 
-
-// getDefaultPreloads returns default preload associations for Article queries
+// getDefaultPreloads returns default preload associations for Article queries.
 func getDefaultPreloads() []string {
 	return []string{PreloadCategory, PreloadTags}
 }

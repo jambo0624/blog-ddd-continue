@@ -1,20 +1,22 @@
-package repository
+package repository_test
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
 
-	"github.com/jambo0624/blog/tests/testutil"
-	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
-	factory "github.com/jambo0624/blog/tests/testutil/factory"
+	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/persistence"
+	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
+	"github.com/jambo0624/blog/tests/testutil"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func setupTest(t *testing.T) (*testutil.TestDB, func(), tagRepository.TagRepository, *factory.TagFactory) {
 	t.Helper()
-	
+
 	testDB, cleanup := testutil.SetupTestDB(t)
 	repo := tagPersistence.NewGormTagRepository(testDB.DB)
 	factory := factory.NewTagFactory()
@@ -29,7 +31,7 @@ func TestGormTagRepository_FindByID(t *testing.T) {
 	tag := testDB.Data.Tags[0]
 
 	found, err := repo.FindByID(tag.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tag.Name, found.Name)
 	assert.Equal(t, tag.Color, found.Color)
 }
@@ -44,7 +46,7 @@ func TestGormTagRepository_FindAll(t *testing.T) {
 		q.WithNameLike(name)
 
 		tags, total, err := repo.FindAll(q)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 		assert.Contains(t, tags[0].Name, name)
 	})
@@ -57,11 +59,11 @@ func TestGormTagRepository_Save(t *testing.T) {
 	tag := factory.BuildEntity()
 
 	err := repo.Save(tag)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotZero(t, tag.ID)
 
 	found, err := repo.FindByID(tag.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tag.Name, found.Name)
 	assert.Equal(t, tag.Color, found.Color)
 }
@@ -74,10 +76,10 @@ func TestGormTagRepository_Update(t *testing.T) {
 	tag.Name = "Updated Name"
 
 	err := repo.Update(tag)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	found, err := repo.FindByID(tag.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tag.Name, found.Name)
 }
 
@@ -88,15 +90,15 @@ func TestGormTagRepository_Delete(t *testing.T) {
 	tag := testDB.Data.Tags[0]
 
 	err := repo.Delete(tag.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var found tagEntity.Tag
 	err = testDB.DB.Unscoped().First(&found, tag.ID).Error
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, found.DeletedAt)
 
 	_, err = repo.FindByID(tag.ID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestGormTagRepository_FindAll_WithFilters(t *testing.T) {
@@ -124,10 +126,8 @@ func TestGormTagRepository_FindAll_WithFilters(t *testing.T) {
 			expectedCount: 1,
 		},
 		{
-			name: "no filter",
-			buildQuery: func() *tagQuery.TagQuery {
-				return tagQuery.NewTagQuery()
-			},
+			name:          "no filter",
+			buildQuery:    tagQuery.NewTagQuery,
 			expectedCount: 4,
 		},
 	}
@@ -135,7 +135,7 @@ func TestGormTagRepository_FindAll_WithFilters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tags, count, err := repo.FindAll(tt.buildQuery())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCount, count)
 			assert.Len(t, tags, int(tt.expectedCount))
 		})

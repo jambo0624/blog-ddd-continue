@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/getsentry/sentry-go"
+
 	"github.com/jambo0624/blog/internal/shared/application/service"
+	"github.com/jambo0624/blog/internal/shared/domain/repository"
 	"github.com/jambo0624/blog/internal/tag/domain/entity"
 	"github.com/jambo0624/blog/internal/tag/domain/query"
 	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
-	"github.com/jambo0624/blog/internal/shared/domain/repository"
 )
 
 type TagService struct {

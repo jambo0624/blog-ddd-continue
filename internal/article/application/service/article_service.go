@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/jambo0624/blog/internal/shared/application/service"
+
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
-	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
-	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
-	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	"github.com/jambo0624/blog/internal/article/domain/query"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
+	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
+	"github.com/jambo0624/blog/internal/shared/application/service"
 	"github.com/jambo0624/blog/internal/shared/domain/repository"
+	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
 )
 
 type ArticleService struct {
@@ -26,10 +27,11 @@ func NewArticleService(
 	tr tagRepository.TagRepository,
 ) *ArticleService {
 	baseService := service.NewBaseService(repo)
+
 	return &ArticleService{
 		BaseService:  baseService,
 		categoryRepo: cr,
-		tagRepo:     tr,
+		tagRepo:      tr,
 	}
 }
 
@@ -37,14 +39,16 @@ func (s *ArticleService) Create(req *dto.CreateArticleRequest) (*articleEntity.A
 	category, err := s.categoryRepo.FindByID(req.CategoryID)
 	if err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("category not found: %w", err)
 	}
 
-	var tags []tagEntity.Tag
+	tags := make([]tagEntity.Tag, 0, len(req.TagIDs))
 	for _, tagID := range req.TagIDs {
 		tag, err := s.tagRepo.FindByID(tagID)
 		if err != nil {
 			sentry.CaptureException(err)
+
 			return nil, fmt.Errorf("tag not found: %w", err)
 		}
 		tags = append(tags, *tag)
@@ -53,11 +57,13 @@ func (s *ArticleService) Create(req *dto.CreateArticleRequest) (*articleEntity.A
 	article, err := articleEntity.NewArticle(category, req.Title, req.Content, tags)
 	if err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("failed to create article: %w", err)
 	}
 
 	if err := s.Repo.Save(article); err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("failed to save article: %w", err)
 	}
 
@@ -68,20 +74,23 @@ func (s *ArticleService) Update(id uint, req *dto.UpdateArticleRequest) (*articl
 	article, err := s.FindByID(id)
 	if err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("failed to find article by id: %w", err)
 	}
 
 	category, err := s.categoryRepo.FindByID(req.CategoryID)
 	if err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("category not found: %w", err)
 	}
 
-	var tags []tagEntity.Tag
+	tags := make([]tagEntity.Tag, 0, len(req.TagIDs))
 	for _, tagID := range req.TagIDs {
 		tag, err := s.tagRepo.FindByID(tagID)
 		if err != nil {
 			sentry.CaptureException(err)
+
 			return nil, fmt.Errorf("tag not found: %w", err)
 		}
 		tags = append(tags, *tag)
@@ -91,6 +100,7 @@ func (s *ArticleService) Update(id uint, req *dto.UpdateArticleRequest) (*articl
 
 	if err := s.Repo.Update(article); err != nil {
 		sentry.CaptureException(err)
+
 		return nil, fmt.Errorf("failed to update article: %w", err)
 	}
 

@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
+	"github.com/jambo0624/blog/internal/shared/domain/errors"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 )
 
@@ -35,26 +37,26 @@ func TestNewArticle(t *testing.T) {
 		{
 			name:        "nil category",
 			category:    nil,
-			title:      "Test Title",
-			content:    "Test Content",
-			wantErr:    true,
-			expectedErr: validate.ErrCategoryRequired,
+			title:       "Test Title",
+			content:     "Test Content",
+			wantErr:     true,
+			expectedErr: errors.ErrCategoryRequired,
 		},
 		{
 			name:        "empty title",
 			category:    validCategory,
-			title:      "",
-			content:    "Test Content",
-			wantErr:    true,
-			expectedErr: validate.ErrTitleRequired,
+			title:       "",
+			content:     "Test Content",
+			wantErr:     true,
+			expectedErr: errors.ErrTitleRequired,
 		},
 		{
 			name:        "empty content",
 			category:    validCategory,
-			title:      "Test Title",
-			content:    "",
-			wantErr:    true,
-			expectedErr: validate.ErrContentRequired,
+			title:       "Test Title",
+			content:     "",
+			wantErr:     true,
+			expectedErr: errors.ErrContentRequired,
 		},
 	}
 
@@ -65,7 +67,7 @@ func TestNewArticle(t *testing.T) {
 				assert.ErrorIs(t, err, tt.expectedErr)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.title, article.Title)
 			assert.Equal(t, tt.content, article.Content)
 			assert.Equal(t, tt.category.ID, article.CategoryID)
@@ -96,11 +98,12 @@ func TestArticle_AddTag(t *testing.T) {
 		{
 			name: "add duplicate tag",
 			setupTags: func() {
-				article.AddTag(*tag)
+				err := article.AddTag(*tag)
+				require.Error(t, err)
 			},
 			tag:         *tag,
 			wantErr:     true,
-			expectedErr: validate.ErrTagAlreadyExists,
+			expectedErr: errors.ErrTagAlreadyExists,
 		},
 	}
 
@@ -115,7 +118,7 @@ func TestArticle_AddTag(t *testing.T) {
 				assert.ErrorIs(t, err, tt.expectedErr)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Contains(t, article.Tags, tt.tag)
 		})
 	}
@@ -142,4 +145,4 @@ func TestArticle_Update(t *testing.T) {
 	assert.Equal(t, "Updated Content", article.Content)
 	assert.Equal(t, newCategory.ID, article.CategoryID)
 	assert.Equal(t, newTag.ID, article.Tags[0].ID)
-} 
+}

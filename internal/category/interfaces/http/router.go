@@ -6,11 +6,10 @@ import (
 
 type CategoryRouter struct {
 	handler *CategoryHandler
-	engine  *gin.Engine
 }
 
 func NewCategoryRouter(handler *CategoryHandler) *CategoryRouter {
-	return &CategoryRouter{handler: handler, engine: gin.New()}
+	return &CategoryRouter{handler: handler}
 }
 
 func (r *CategoryRouter) Register(api *gin.RouterGroup) {
@@ -22,8 +21,4 @@ func (r *CategoryRouter) Register(api *gin.RouterGroup) {
 		categories.PUT("/:id", r.handler.Update)
 		categories.DELETE("/:id", r.handler.Delete)
 	}
-}
-
-func (r *CategoryRouter) Engine() *gin.Engine {
-	return r.engine
 }

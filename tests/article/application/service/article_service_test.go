@@ -2,16 +2,18 @@ package service_test
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/article/application/service"
 	"github.com/jambo0624/blog/internal/article/domain/query"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 	mockArticle "github.com/jambo0624/blog/tests/testutil/mock/article"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
-	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func setupTest(t *testing.T) (
@@ -22,7 +24,7 @@ func setupTest(t *testing.T) (
 	*mockTag.MockTagRepository,
 ) {
 	t.Helper()
-	
+
 	mockArticleRepo := new(mockArticle.MockArticleRepository)
 	mockCategoryRepo := new(mockCategory.MockCategoryRepository)
 	mockTagRepo := new(mockTag.MockTagRepository)
@@ -44,7 +46,7 @@ func TestArticleService_Create(t *testing.T) {
 
 	article, err := articleService.Create(req)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, article)
 	assert.Equal(t, req.Title, article.Title)
 	assert.Equal(t, req.Content, article.Content)
@@ -63,7 +65,7 @@ func TestArticleService_FindAll(t *testing.T) {
 
 	found, total, err := articleService.FindAll(q)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	assert.Len(t, found, 2)
 	assert.Equal(t, articles[0].Title, found[0].Title)
@@ -82,7 +84,7 @@ func TestArticleService_Update(t *testing.T) {
 
 	updated, err := articleService.Update(article.ID, req)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, req.Title, updated.Title)
 	assert.Equal(t, req.Content, updated.Content)
 	assert.Equal(t, category.ID, updated.CategoryID)
@@ -97,7 +99,7 @@ func TestArticleService_Delete(t *testing.T) {
 
 	err := articleService.Delete(1)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockArticleRepo.AssertExpectations(t)
 }
 
@@ -114,7 +116,7 @@ func TestArticleService_Create_ValidationError(t *testing.T) {
 
 	article, err := articleService.Create(req)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, article)
 	mockArticleRepo.AssertNotCalled(t, "Save")
 }
@@ -127,7 +129,7 @@ func TestArticleService_Update_NotFound(t *testing.T) {
 	req, _, _ := articleFactory.BuildUpdateRequest()
 	article, err := articleService.Update(999, req)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, article)
 	mockArticleRepo.AssertNotCalled(t, "Update")
 	mockCategoryRepo.AssertNotCalled(t, "FindByID")

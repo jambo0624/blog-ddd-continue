@@ -8,7 +8,7 @@ import (
 
 type TagQuery struct {
 	baseQuery.BaseQuery
-	NameLike  string `binding:"omitempty,max=100" validate:"omitempty,max=100"`
+	NameLike  string `binding:"omitempty,max=100"  validate:"omitempty,max=100"`
 	ColorLike string `binding:"omitempty,hexcolor" validate:"omitempty,hexcolor"`
 }
 

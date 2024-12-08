@@ -3,18 +3,19 @@ package http
 import (
 	"strconv"
 	"strings"
-	
+
 	"github.com/gin-gonic/gin"
+
 	"github.com/jambo0624/blog/internal/shared/domain/constants"
-	"github.com/jambo0624/blog/internal/shared/domain/validate"
+	"github.com/jambo0624/blog/internal/shared/domain/errors"
 )
 
-// BaseQueryBuilder handles common query parameters
+// BaseQueryBuilder handles common query parameters.
 type BaseQueryBuilder struct {
 	CommonFields map[string]bool
 }
 
-// NewBaseQueryBuilder creates a base query builder
+// NewBaseQueryBuilder creates a base query builder.
 func NewBaseQueryBuilder() *BaseQueryBuilder {
 	return &BaseQueryBuilder{
 		CommonFields: map[string]bool{
@@ -25,14 +26,14 @@ func NewBaseQueryBuilder() *BaseQueryBuilder {
 	}
 }
 
-// BuildIDs builds ID IN query
+// BuildIDs builds ID IN query.
 func (b *BaseQueryBuilder) BuildIDs(c *gin.Context) ([]uint, error) {
 	if ids := c.QueryArray("ids"); len(ids) > 0 {
 		uintIDs := make([]uint, 0, len(ids))
 		for _, id := range ids {
 			uid, err := strconv.ParseUint(id, 10, 32)
 			if err != nil {
-				return nil, validate.ErrInvalidIDFormat
+				return nil, errors.ErrInvalidIDFormat
 			}
 			uintIDs = append(uintIDs, uint(uid))
 		}
@@ -41,7 +42,7 @@ func (b *BaseQueryBuilder) BuildIDs(c *gin.Context) ([]uint, error) {
 	return nil, nil
 }
 
-// BuildPagination builds pagination parameters
+// BuildPagination builds pagination parameters.
 func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, currentOffset int) (int, int, error) {
 	limit := currentLimit
 	offset := currentOffset
@@ -49,7 +50,7 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 	if limitStr := c.Query("limit"); limitStr != "" {
 		l, err := strconv.Atoi(limitStr)
 		if err != nil || l < 0 {
-			return 0, 0, validate.ErrInvalidLimit
+			return 0, 0, errors.ErrInvalidLimit
 		}
 		if l > constants.MaxPageSize {
 			l = constants.MaxPageSize
@@ -60,7 +61,7 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 	if offsetStr := c.Query("offset"); offsetStr != "" {
 		o, err := strconv.Atoi(offsetStr)
 		if err != nil || o < 0 {
-			return 0, 0, validate.ErrInvalidOffset
+			return 0, 0, errors.ErrInvalidOffset
 		}
 		offset = o
 	}
@@ -68,7 +69,7 @@ func (b *BaseQueryBuilder) BuildPagination(c *gin.Context, currentLimit, current
 	return limit, offset, nil
 }
 
-// BuildOrderBy builds order by parameters
+// BuildOrderBy builds order by parameters.
 func (b *BaseQueryBuilder) BuildOrderBy(c *gin.Context, additionalFields map[string]bool) (string, error) {
 	if orderBy := c.Query("order_by"); orderBy != "" {
 		// Merge common fields and additional fields
@@ -82,10 +83,10 @@ func (b *BaseQueryBuilder) BuildOrderBy(c *gin.Context, additionalFields map[str
 
 		field := strings.TrimSuffix(strings.TrimPrefix(orderBy, "-"), " DESC")
 		if !allowedFields[field] {
-			return "", validate.ErrInvalidOrderByField
+			return "", errors.ErrInvalidOrderByField
 		}
 
 		return orderBy, nil
 	}
 	return "", nil
-} 
+}

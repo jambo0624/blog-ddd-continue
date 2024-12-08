@@ -1,24 +1,24 @@
 package constants
 
 const (
-	// Common limits
+	// Common limits.
 	MaxPageSize = 100
 
-	// Name limits
+	// Name limits.
 	MinNameLength = 2
 	MaxNameLength = 100
 
-	// Title limits
+	// Title limits.
 	MinTitleLength = 1
 	MaxTitleLength = 255
 
-	// Content limits
+	// Content limits.
 	MinContentLength = 1
 	MaxContentLength = 1000
 
-	// Slug limits
+	// Slug limits.
 	MaxSlugLength = 100
 
-	// Color limits
+	// Color limits.
 	MaxColorLength = 50
 )

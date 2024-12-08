@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/jambo0624/blog/internal/tag/domain/query"
-	"github.com/jambo0624/blog/internal/tag/domain/entity"
-	"github.com/jambo0624/blog/tests/testutil"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/jambo0624/blog/internal/tag/domain/entity"
+	"github.com/jambo0624/blog/internal/tag/domain/query"
+	"github.com/jambo0624/blog/tests/testutil"
 )
 
 func TestTagQuery_Validate(t *testing.T) {
@@ -41,10 +43,10 @@ func TestTagQuery_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.query().Validate()
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -124,4 +126,4 @@ func TestTagQuery_ApplyFilters(t *testing.T) {
 			}
 		})
 	}
-} 
+}
