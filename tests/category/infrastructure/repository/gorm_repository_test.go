@@ -95,3 +95,46 @@ func TestGormCategoryRepository_Delete(t *testing.T) {
 	_, err = repo.FindByID(category.ID)
 	assert.Nil(t, err)
 }
+
+func TestGormCategoryRepository_FindAll_WithFilters(t *testing.T) {
+	testDB, cleanup, repo, factory := setupTest(t)
+	defer cleanup()
+
+	// Create test data
+	category1 := factory.BuildEntity(factory.WithName("Test1"))
+	category2 := factory.BuildEntity(factory.WithName("Test2"))
+	testDB.DB.Create(category1)
+	testDB.DB.Create(category2)
+
+	tests := []struct {
+		name          string
+		buildQuery    func() *categoryQuery.CategoryQuery
+		expectedCount int64
+	}{
+		{
+			name: "filter by name",
+			buildQuery: func() *categoryQuery.CategoryQuery {
+				q := categoryQuery.NewCategoryQuery()
+				q.WithNameLike("Test1")
+				return q
+			},
+			expectedCount: 1,
+		},
+		{
+			name: "no filter",
+			buildQuery: func() *categoryQuery.CategoryQuery {
+				return categoryQuery.NewCategoryQuery()
+			},
+			expectedCount: 4, // includes default categories
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			categories, count, err := repo.FindAll(tt.buildQuery())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCount, count)
+			assert.Len(t, categories, int(tt.expectedCount))
+		})
+	}
+}

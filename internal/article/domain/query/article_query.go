@@ -17,7 +17,7 @@ type ArticleQuery struct {
 	CategoryID          *uint  `json:"category_id" binding:"omitempty" validate:"omitempty,gt=0"`
 	TagIDs              []uint `json:"tag_ids" binding:"omitempty" validate:"omitempty,dive,gt=0"`
 	TitleLike           string `json:"title_like" binding:"omitempty" validate:"omitempty,max=255"`
-	ContentLike         string `json:"content_like" binding:"omitempty, max=255"`
+	ContentLike         string `json:"content_like" binding:"omitempty, max=255" validate:"omitempty,max=255"`
 	PreloadAssociations []string `json:"preload_associations" binding:"omitempty"`
 }
 
@@ -70,7 +70,15 @@ func (q *ArticleQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
 			Where("article_tags.tag_id IN ?", q.TagIDs).
 			Group("articles.id")
 	}
-	
+
+	if q.TitleLike != "" {
+		db = db.Where("title LIKE ?", "%"+q.TitleLike+"%")
+	}
+
+	if q.ContentLike != "" {
+		db = db.Where("content LIKE ?", "%"+q.ContentLike+"%")
+	}
+
 	return db
 }
 

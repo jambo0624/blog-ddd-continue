@@ -128,4 +128,129 @@ func TestGormArticleRepository_Delete(t *testing.T) {
 
 	_, err = repo.FindByID(article.ID)
 	assert.Nil(t, err)
+}
+
+func TestGormArticleRepository_FindAll_WithFilters(t *testing.T) {
+	testDB, cleanup, repo, factory := setupTest(t)
+	defer cleanup()
+
+	// Create test data
+	article1, category1, tag1 := factory.BuildEntity(
+		factory.WithTitle("Test1"),
+		factory.WithContent("Content1"),
+	)
+	article2, category2, tag2 := factory.BuildEntity(
+		factory.WithTitle("Test2"),
+		factory.WithContent("Content2"),
+	)
+
+	// Create categories first
+	err := testDB.DB.Create(category1).Error
+	assert.NoError(t, err)
+	err = testDB.DB.Create(category2).Error
+	assert.NoError(t, err)
+
+	// Create tags
+	err = testDB.DB.Create(tag1).Error
+	assert.NoError(t, err)
+	err = testDB.DB.Create(tag2).Error
+	assert.NoError(t, err)
+
+	// Create articles
+	err = testDB.DB.Create(article1).Error
+	assert.NoError(t, err)
+	err = testDB.DB.Create(article2).Error
+	assert.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		buildQuery    func() *articleQuery.ArticleQuery
+		expectedCount int64
+		
+		validate      func(t *testing.T, articles []*articleEntity.Article)
+	}{
+		{
+			name: "filter by title",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				q := articleQuery.NewArticleQuery()
+				q.WithTitleLike("Test1")
+				return q
+			},
+			expectedCount: 1,
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Equal(t, "Test1", articles[0].Title)
+			},
+		},
+		{
+			name: "filter by content",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				q := articleQuery.NewArticleQuery()
+				q.WithContentLike("Content2")
+				return q
+			},
+			expectedCount: 1,
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Equal(t, "Content2", articles[0].Content)
+			},
+		},
+		{
+			name: "filter by category",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				q := articleQuery.NewArticleQuery()
+				q.WithCategoryID(article1.CategoryID)
+				return q
+			},
+			expectedCount: 1,
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Equal(t, article1.CategoryID, articles[0].CategoryID)
+			},
+		},
+		{
+			name: "filter by tags",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				q := articleQuery.NewArticleQuery()
+				q.WithTagIDs([]uint{article1.Tags[0].ID})
+				return q
+			},
+			expectedCount: 1,
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Contains(t, articles[0].Tags, article1.Tags[0])
+			},
+		},
+		{
+			name: "with multiple filters",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				q := articleQuery.NewArticleQuery()
+				q.WithTitleLike("Test")
+				q.WithCategoryID(article1.CategoryID)
+				return q
+			},
+			expectedCount: 1,
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Equal(t, article1.CategoryID, articles[0].CategoryID)
+				assert.Contains(t, articles[0].Title, "Test")
+			},
+		},
+		{
+			name: "no filter",
+			buildQuery: func() *articleQuery.ArticleQuery {
+				return articleQuery.NewArticleQuery()
+			},
+			expectedCount: 4, // includes default articles
+			validate: func(t *testing.T, articles []*articleEntity.Article) {
+				assert.Len(t, articles, 4)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			articles, count, err := repo.FindAll(tt.buildQuery())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCount, count)
+			if tt.validate != nil {
+				tt.validate(t, articles)
+			}
+		})
+	}
 } 

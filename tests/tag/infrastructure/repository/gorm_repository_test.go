@@ -98,3 +98,46 @@ func TestGormTagRepository_Delete(t *testing.T) {
 	_, err = repo.FindByID(tag.ID)
 	assert.Nil(t, err)
 }
+
+func TestGormTagRepository_FindAll_WithFilters(t *testing.T) {
+	testDB, cleanup, repo, factory := setupTest(t)
+	defer cleanup()
+
+	// Create test data
+	tag1 := factory.BuildEntity(factory.WithName("Test1"))
+	tag2 := factory.BuildEntity(factory.WithName("Test2"))
+	testDB.DB.Create(tag1)
+	testDB.DB.Create(tag2)
+
+	tests := []struct {
+		name          string
+		buildQuery    func() *tagQuery.TagQuery
+		expectedCount int64
+	}{
+		{
+			name: "filter by name",
+			buildQuery: func() *tagQuery.TagQuery {
+				q := tagQuery.NewTagQuery()
+				q.WithNameLike("Test1")
+				return q
+			},
+			expectedCount: 1,
+		},
+		{
+			name: "no filter",
+			buildQuery: func() *tagQuery.TagQuery {
+				return tagQuery.NewTagQuery()
+			},
+			expectedCount: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tags, count, err := repo.FindAll(tt.buildQuery())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCount, count)
+			assert.Len(t, tags, int(tt.expectedCount))
+		})
+	}
+}

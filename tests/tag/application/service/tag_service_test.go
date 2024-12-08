@@ -2,7 +2,7 @@ package service_test
 
 import (
 	"testing"
-
+	"gorm.io/gorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -83,4 +83,29 @@ func TestTagService_FindAll(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(expectedTags)), total)
 	assert.Len(t, tags, len(expectedTags))
+}
+
+func TestTagService_Create_ValidationError(t *testing.T) {
+	service, mockRepo, factory := setupTest(t)
+
+	req := factory.BuildCreateRequest()
+	req.Name = "" // invalid name
+
+	tag, err := service.Create(req)
+	assert.Error(t, err)
+	assert.Nil(t, tag)
+	mockRepo.AssertNotCalled(t, "Save")
+}
+
+func TestTagService_Update_NotFound(t *testing.T) {
+	service, mockRepo, factory := setupTest(t)
+
+	mockRepo.On("FindByID", uint(999), mock.Anything).Return(nil, gorm.ErrRecordNotFound)
+
+	req := factory.BuildUpdateRequest()
+	tag, err := service.Update(999, req)
+
+	assert.Error(t, err)
+	assert.Nil(t, tag)
+	mockRepo.AssertNotCalled(t, "Update")
 } 

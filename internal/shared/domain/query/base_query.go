@@ -21,6 +21,7 @@ func NewBaseQuery() BaseQuery {
 	return BaseQuery{
 		Limit:               constants.DefaultPageSize,
 		Offset:              constants.DefaultPageOffset,
+		OrderBy:             constants.DefaultOrderBy,
 		PreloadAssociations: []string{},
 	}
 }

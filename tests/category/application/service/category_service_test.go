@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/category/application/service"
 	"github.com/jambo0624/blog/internal/category/domain/query"
@@ -77,4 +78,29 @@ func TestCategoryService_Delete(t *testing.T) {
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
+}
+
+func TestCategoryService_Create_ValidationError(t *testing.T) {
+	mockRepo, categoryService, factory := setupTest(t)
+
+	req := factory.BuildCreateRequest()
+	req.Name = "" // invalid name
+
+	category, err := categoryService.Create(req)
+	assert.Error(t, err)
+	assert.Nil(t, category)
+	mockRepo.AssertNotCalled(t, "Save")
+}
+
+func TestCategoryService_Update_NotFound(t *testing.T) {
+	mockRepo, categoryService, factory := setupTest(t)
+
+	mockRepo.On("FindByID", uint(999), mock.Anything).Return(nil, gorm.ErrRecordNotFound)
+
+	req := factory.BuildUpdateRequest()
+	category, err := categoryService.Update(999, req)
+
+	assert.Error(t, err)
+	assert.Nil(t, category)
+	mockRepo.AssertNotCalled(t, "Update")
 }

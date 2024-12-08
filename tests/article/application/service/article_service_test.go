@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 
 	"github.com/jambo0624/blog/internal/article/application/service"
 	"github.com/jambo0624/blog/internal/article/domain/query"
@@ -98,4 +99,37 @@ func TestArticleService_Delete(t *testing.T) {
 
 	assert.NoError(t, err)
 	mockArticleRepo.AssertExpectations(t)
+}
+
+func TestArticleService_Create_ValidationError(t *testing.T) {
+	mockArticleRepo, articleService, articleFactory, mockCategoryRepo, mockTagRepo := setupTest(t)
+
+	req, category, tag := articleFactory.BuildCreateRequest()
+	req.Title = "" // invalid title
+
+	// Service still tries to find category and tag
+	// So we need to set expectations
+	mockCategoryRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(category, nil)
+	mockTagRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(tag, nil)
+
+	article, err := articleService.Create(req)
+
+	assert.Error(t, err)
+	assert.Nil(t, article)
+	mockArticleRepo.AssertNotCalled(t, "Save")
+}
+
+func TestArticleService_Update_NotFound(t *testing.T) {
+	mockArticleRepo, articleService, articleFactory, mockCategoryRepo, mockTagRepo := setupTest(t)
+
+	mockArticleRepo.On("FindByID", uint(999), mock.Anything).Return(nil, gorm.ErrRecordNotFound)
+
+	req, _, _ := articleFactory.BuildUpdateRequest()
+	article, err := articleService.Update(999, req)
+
+	assert.Error(t, err)
+	assert.Nil(t, article)
+	mockArticleRepo.AssertNotCalled(t, "Update")
+	mockCategoryRepo.AssertNotCalled(t, "FindByID")
+	mockTagRepo.AssertNotCalled(t, "FindByID")
 }

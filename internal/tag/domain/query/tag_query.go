@@ -8,8 +8,8 @@ import (
 
 type TagQuery struct {
 	baseQuery.BaseQuery
-	NameLike  string `validate:"omitempty,max=100" binding:"omitempty,max=100" validate:"omitempty,max=100"`
-	ColorLike string `validate:"omitempty,hexcolor" binding:"omitempty,hexcolor" validate:"omitempty,hexcolor"`
+	NameLike  string `binding:"omitempty,max=100" validate:"omitempty,max=100"`
+	ColorLike string `binding:"omitempty,hexcolor" validate:"omitempty,hexcolor"`
 }
 
 func NewTagQuery() *TagQuery {
@@ -43,5 +43,9 @@ func (q *TagQuery) ApplyFilters(db *gorm.DB) *gorm.DB {
 	if q.NameLike != "" {
 		db = db.Where("name LIKE ?", "%"+q.NameLike+"%")
 	}
+	if q.ColorLike != "" {
+		db = db.Where("color LIKE ?", "%"+q.ColorLike+"%")
+	}
+
 	return db
 }
