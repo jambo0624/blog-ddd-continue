@@ -3,6 +3,7 @@ module github.com/jambo0624/blog
 go 1.23.2
 
 require (
+	github.com/getsentry/sentry-go v0.29.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -10,6 +11,8 @@ require (
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
 )
+
+require github.com/go-playground/validator/v10 v10.22.1
 
 require (
 	github.com/bytedance/sonic v1.12.4 // indirect
@@ -22,7 +25,6 @@ require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
