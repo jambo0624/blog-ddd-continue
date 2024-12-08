@@ -6,14 +6,15 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/jambo0624/blog/internal/article/application/service"
-	"github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/domain/query"
+	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 	mockArticle "github.com/jambo0624/blog/tests/testutil/mock/article"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func TestArticleService_Create(t *testing.T) {
@@ -31,12 +32,15 @@ func TestArticleService_Create(t *testing.T) {
 	mockTagRepo.On("FindByID", uint(1), mock.Anything).Return(tag, nil)
 	mockArticleRepo.On("Save", mock.AnythingOfType("*entity.Article")).Return(nil)
 
-	req := &dto.CreateArticleRequest{
-		CategoryID: 1,
-		Title:     "Test Article",
-		Content:   "Test Content",
-		TagIDs:    []uint{1},
-	}
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
+	req := articleFactory.BuildCreateRequest(
+		func(req *dto.CreateArticleRequest) {
+			req.CategoryID = category.ID
+			req.TagIDs = []uint{tag.ID}
+		},
+	)
 
 	article, err := articleService.Create(req)
 
@@ -56,10 +60,10 @@ func TestArticleService_FindAll(t *testing.T) {
 
 	articleService := service.NewArticleService(mockArticleRepo, mockCategoryRepo, mockTagRepo)
 
-	articles := []*entity.Article{
-		{ID: 1, Title: "Test Article 1"},
-		{ID: 2, Title: "Test Article 2"},
-	}
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
+	articles := articleFactory.BuildList(2)
 
 	q := query.NewArticleQuery()
 	mockArticleRepo.On("FindAll", q).Return(articles, int64(2), nil)
@@ -69,7 +73,7 @@ func TestArticleService_FindAll(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	assert.Len(t, found, 2)
-	assert.Equal(t, "Test Article 1", found[0].Title)
+	assert.Equal(t, articles[0].Title, found[0].Title)
 }
 
 func TestArticleService_Update(t *testing.T) {
@@ -79,27 +83,42 @@ func TestArticleService_Update(t *testing.T) {
 
 	articleService := service.NewArticleService(mockArticleRepo, mockCategoryRepo, mockTagRepo)
 
-	article := &entity.Article{ID: 1, Title: "Old Title"}
-	category := &categoryEntity.Category{ID: 2, Name: "New Category"}
-	tag := &tagEntity.Tag{ID: 2, Name: "New Tag"}
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
+	article := articleFactory.BuildEntity(
+		func(a *articleEntity.Article) {
+			a.ID = 1
+		},
+	)
+	category := categoryFactory.BuildEntity(
+		func(c *categoryEntity.Category) {
+			c.ID = 2
+		},
+	)
+	tag := tagFactory.BuildEntity(
+		func(t *tagEntity.Tag) {
+			t.ID = 2
+		},
+	)
 
 	mockArticleRepo.On("FindByID", uint(1), mock.Anything).Return(article, nil)
 	mockCategoryRepo.On("FindByID", uint(2), mock.Anything).Return(category, nil)
 	mockTagRepo.On("FindByID", uint(2), mock.Anything).Return(tag, nil)
 	mockArticleRepo.On("Update", mock.AnythingOfType("*entity.Article")).Return(nil)
 
-	req := &dto.UpdateArticleRequest{
-		CategoryID: 2,
-		Title:     "New Title",
-		Content:   "New Content",
-		TagIDs:    []uint{2},
-	}
+	req := articleFactory.BuildUpdateRequest(
+		func(req *dto.UpdateArticleRequest) {
+			req.CategoryID = category.ID
+			req.TagIDs = []uint{tag.ID}
+		},
+	)
 
 	updated, err := articleService.Update(1, req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "New Title", updated.Title)
-	assert.Equal(t, "New Content", updated.Content)
+	assert.Equal(t, req.Title, updated.Title)
+	assert.Equal(t, req.Content, updated.Content)
 	assert.Equal(t, category.ID, updated.CategoryID)
 	assert.Len(t, updated.Tags, 1)
 	assert.Equal(t, tag.ID, updated.Tags[0].ID)

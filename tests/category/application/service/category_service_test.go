@@ -6,20 +6,17 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/jambo0624/blog/internal/category/application/service"
-	"github.com/jambo0624/blog/internal/category/domain/entity"
 	"github.com/jambo0624/blog/internal/category/domain/query"
-	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func TestCategoryService_Create(t *testing.T) {
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	categoryService := service.NewCategoryService(mockRepo)
 
-	req := &dto.CreateCategoryRequest{
-		Name: "Test Category",
-		Slug: "test-category",
-	}
+	factory := factory.NewCategoryFactory()
+	req := factory.BuildCreateRequest()
 
 	mockRepo.On("Save", mock.AnythingOfType("*entity.Category")).Return(nil)
 
@@ -35,41 +32,36 @@ func TestCategoryService_FindAll(t *testing.T) {
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	categoryService := service.NewCategoryService(mockRepo)
 
-	categories := []*entity.Category{
-		{ID: 1, Name: "Category 1", Slug: "category-1"},
-		{ID: 2, Name: "Category 2", Slug: "category-2"},
-	}
+	factory := factory.NewCategoryFactory()
+	expectedCategories := factory.BuildList(2)
 
 	q := query.NewCategoryQuery()
-	mockRepo.On("FindAll", q).Return(categories, int64(2), nil)
+	mockRepo.On("FindAll", q).Return(expectedCategories, int64(2), nil)
 
 	found, total, err := categoryService.FindAll(q)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Len(t, found, 2)
-	assert.Equal(t, "Category 1", found[0].Name)
+	assert.Equal(t, int64(len(expectedCategories)), total)
+	assert.Equal(t, expectedCategories, found)
 }
 
 func TestCategoryService_Update(t *testing.T) {
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	categoryService := service.NewCategoryService(mockRepo)
 
-	category := &entity.Category{ID: 1, Name: "Old Name", Slug: "old-slug"}
+	factory := factory.NewCategoryFactory()
+	expectedCategory := factory.BuildEntity()
 
-	mockRepo.On("FindByID", uint(1), mock.Anything).Return(category, nil)
+	mockRepo.On("FindByID", uint(1), mock.Anything).Return(expectedCategory, nil)
 	mockRepo.On("Update", mock.AnythingOfType("*entity.Category")).Return(nil)
 
-	req := &dto.UpdateCategoryRequest{
-		Name: "New Name",
-		Slug: "new-slug",
-	}
+	req := factory.BuildUpdateRequest()
 
 	updated, err := categoryService.Update(1, req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "New Name", updated.Name)
-	assert.Equal(t, "new-slug", updated.Slug)
+	assert.Equal(t, expectedCategory.Name, updated.Name)
+	assert.Equal(t, expectedCategory.Slug, updated.Slug)
 }
 
 func TestCategoryService_Delete(t *testing.T) {

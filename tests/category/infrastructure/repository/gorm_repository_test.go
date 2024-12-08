@@ -8,6 +8,7 @@ import (
 	categoryRepo "github.com/jambo0624/blog/internal/category/infrastructure/repository"
 	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func TestGormCategoryRepository_FindByID(t *testing.T) {
@@ -30,12 +31,13 @@ func TestGormCategoryRepository_FindAll(t *testing.T) {
 
 	t.Run("with name filter", func(t *testing.T) {
 		q := categoryQuery.NewCategoryQuery()
-		q.WithNameLike("Technology")
+		name := testDB.Data.Categories[0].Name
+		q.WithNameLike(name)
 
 		categories, total, err := repo.FindAll(q)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), total)
-		assert.Contains(t, categories[0].Name, "Technology")
+		assert.Contains(t, categories[0].Name, name)
 	})
 }
 
@@ -44,10 +46,9 @@ func TestGormCategoryRepository_Save(t *testing.T) {
 	defer cleanup()
 
 	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
+	factory := factory.NewCategoryFactory()
 
-	category := &categoryEntity.Category{
-		Name:  "New Category",
-	}
+	category := factory.BuildEntity()
 
 	err := repo.Save(category)
 	assert.NoError(t, err)
@@ -71,7 +72,7 @@ func TestGormCategoryRepository_Update(t *testing.T) {
 
 	found, err := repo.FindByID(category.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, "Updated Name", found.Name)
+	assert.Equal(t, category.Name, found.Name)
 }
 
 func TestGormCategoryRepository_Delete(t *testing.T) {

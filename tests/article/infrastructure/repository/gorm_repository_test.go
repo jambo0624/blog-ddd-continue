@@ -9,6 +9,7 @@ import (
 	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func TestGormArticleRepository_FindByID(t *testing.T) {
@@ -63,20 +64,24 @@ func TestGormArticleRepository_Save(t *testing.T) {
 	repo := articleRepo.NewGormArticleRepository(testDB.DB)
 	category := testDB.Data.Categories[0]
 	tag := testDB.Data.Tags[0]
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
 
-	article := &articleEntity.Article{
-		CategoryID: category.ID,
-		Title:     "New Article",
-		Content:   "New Content",
-		Tags:      []tagEntity.Tag{*tag},
-	}
+	article := articleFactory.BuildEntity(
+		func(a *articleEntity.Article) {
+			a.CategoryID = category.ID
+			a.Tags = []tagEntity.Tag{*tag}
+		},
+	)
 
 	err := repo.Save(article)
 	assert.NoError(t, err)
 	assert.NotZero(t, article.ID)
 
 	// Verify saved article
-	found, err := repo.FindByID(article.ID, "Tags")
+	preloads := []string{"Tags"}
+	found, err := repo.FindByID(article.ID, preloads...)
 	assert.NoError(t, err)
 	assert.Equal(t, article.Title, found.Title)
 	assert.Equal(t, article.Content, found.Content)

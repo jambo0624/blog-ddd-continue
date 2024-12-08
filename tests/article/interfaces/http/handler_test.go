@@ -13,13 +13,11 @@ import (
 
 	articleHandler "github.com/jambo0624/blog/internal/article/interfaces/http"
 	articleService "github.com/jambo0624/blog/internal/article/application/service"
-	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
-	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
-	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	mockArticle "github.com/jambo0624/blog/tests/testutil/mock/article"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func setupTest(t *testing.T) (*gin.Engine, *mockArticle.MockArticleRepository, *mockCategory.MockCategoryRepository, *mockTag.MockTagRepository) {
@@ -43,18 +41,18 @@ func setupTest(t *testing.T) (*gin.Engine, *mockArticle.MockArticleRepository, *
 func TestArticleHandler_Create(t *testing.T) {
 	r, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
 
-	// prepare test data
-	category := &categoryEntity.Category{ID: 1, Name: "Test Category"}
-	tag := &tagEntity.Tag{ID: 1, Name: "Test Tag"}
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
 
-	req := dto.CreateArticleRequest{
-		CategoryID: category.ID,
-		Title:     "Test Article",
-		Content:   "Test Content",
-		TagIDs:    []uint{tag.ID},
-	}
+	category := categoryFactory.BuildEntity()
+	tag := tagFactory.BuildEntity()
 
-	// 
+	req := articleFactory.BuildCreateRequest(func(r *dto.CreateArticleRequest) {
+		r.CategoryID = category.ID
+		r.TagIDs = []uint{tag.ID}
+	})
+
 	mockCategoryRepo.On("FindByID", category.ID, mock.Anything).Return(category, nil)
 	mockTagRepo.On("FindByID", tag.ID, mock.Anything).Return(tag, nil)
 	mockArticleRepo.On("Save", mock.AnythingOfType("*entity.Article")).Return(nil)
@@ -65,21 +63,14 @@ func TestArticleHandler_Create(t *testing.T) {
 	request.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, request)
 
-	if w.Code != http.StatusCreated {
-		t.Logf("Response body: %s", w.Body.String())
-	}
-
 	assert.Equal(t, http.StatusCreated, w.Code)
 }
 
 func TestArticleHandler_GetByID(t *testing.T) {
 	r, mockArticleRepo, _, _ := setupTest(t)
 
-	article := &articleEntity.Article{
-		ID:      1,
-		Title:   "Test Article",
-		Content: "Test Content",
-	}
+	articleFactory := factory.NewArticleFactory(factory.NewCategoryFactory(), factory.NewTagFactory())
+	article := articleFactory.BuildEntity()
 
 	mockArticleRepo.On("FindByID", uint(1), mock.Anything).Return(article, nil)
 
@@ -93,10 +84,8 @@ func TestArticleHandler_GetByID(t *testing.T) {
 func TestArticleHandler_List(t *testing.T) {
 	r, mockArticleRepo, _, _ := setupTest(t)
 
-	articles := []*articleEntity.Article{
-		{ID: 1, Title: "Article 1"},
-		{ID: 2, Title: "Article 2"},
-	}
+	articleFactory := factory.NewArticleFactory(factory.NewCategoryFactory(), factory.NewTagFactory())
+	articles := articleFactory.BuildList(2)
 
 	mockArticleRepo.On("FindAll", mock.AnythingOfType("*query.ArticleQuery")).
 		Return(articles, int64(2), nil)
@@ -111,25 +100,19 @@ func TestArticleHandler_List(t *testing.T) {
 func TestArticleHandler_Update(t *testing.T) {
 	r, mockArticleRepo, mockCategoryRepo, mockTagRepo := setupTest(t)
 
-	// prepare test data
-	category := &categoryEntity.Category{ID: 1, Name: "Test Category"}
-	tag := &tagEntity.Tag{ID: 1, Name: "Test Tag"}
-	article := &articleEntity.Article{
-		ID:         1,
-		CategoryID: category.ID,
-		Title:      "Test Article",
-		Content:    "Test Content",
-		Category:   *category,
-		Tags:       []tagEntity.Tag{*tag},
-	}
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
+
+	category := categoryFactory.BuildEntity()
+	tag := tagFactory.BuildEntity()
+	article := articleFactory.BuildEntity()
 
 	// update request
-	req := dto.UpdateArticleRequest{
-		CategoryID: category.ID,
-		Title:     "Updated Title",
-		Content:   "Updated Content",
-		TagIDs:    []uint{tag.ID},
-	}
+	req := articleFactory.BuildUpdateRequest(func(r *dto.UpdateArticleRequest) {
+		r.CategoryID = category.ID
+		r.TagIDs = []uint{tag.ID}
+	})
 
 	// set mock expectations
 	mockArticleRepo.On("FindByID", uint(1), mock.Anything).Return(article, nil)

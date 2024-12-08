@@ -13,9 +13,9 @@ import (
 
 	categoryHandler "github.com/jambo0624/blog/internal/category/interfaces/http"
 	categoryService "github.com/jambo0624/blog/internal/category/application/service"
-	"github.com/jambo0624/blog/internal/category/interfaces/http/dto"
 	"github.com/jambo0624/blog/internal/category/domain/entity"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
+	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
 func setupTest(t *testing.T) (*gin.Engine, *mockCategory.MockCategoryRepository) {
@@ -35,13 +35,16 @@ func setupTest(t *testing.T) (*gin.Engine, *mockCategory.MockCategoryRepository)
 
 func TestCategoryHandler_Create(t *testing.T) {
 	r, mockRepo := setupTest(t)
+	factory := factory.NewCategoryFactory()
+	req := factory.BuildCreateRequest()
+	expectedCategory := factory.BuildEntity(
+		factory.WithName(req.Name),
+		factory.WithSlug(req.Slug),
+	)
 
-	req := dto.CreateCategoryRequest{
-		Name: "Test Category",
-		Slug: "test-category",
-	}
-
-	mockRepo.On("Save", mock.AnythingOfType("*entity.Category")).Return(nil)
+	mockRepo.On("Save", mock.MatchedBy(func(c *entity.Category) bool {
+		return c.Name == expectedCategory.Name && c.Slug == expectedCategory.Slug
+	})).Return(nil)
 
 	body, _ := json.Marshal(req)
 	w := httptest.NewRecorder()
@@ -54,12 +57,8 @@ func TestCategoryHandler_Create(t *testing.T) {
 
 func TestCategoryHandler_GetByID(t *testing.T) {
 	r, mockRepo := setupTest(t)
-
-	category := &entity.Category{
-		ID:   1,
-		Name: "Test Category",
-		Slug: "test-category",
-	}
+	factory := factory.NewCategoryFactory()
+	category := factory.BuildEntity()
 
 	mockRepo.On("FindByID", uint(1), mock.Anything).Return(category, nil)
 
@@ -72,11 +71,8 @@ func TestCategoryHandler_GetByID(t *testing.T) {
 
 func TestCategoryHandler_List(t *testing.T) {
 	r, mockRepo := setupTest(t)
-
-	categories := []*entity.Category{
-		{ID: 1, Name: "Category 1", Slug: "category-1"},
-		{ID: 2, Name: "Category 2", Slug: "category-2"},
-	}
+	factory := factory.NewCategoryFactory()
+	categories := factory.BuildList(2)
 
 	mockRepo.On("FindAll", mock.AnythingOfType("*query.CategoryQuery")).
 		Return(categories, int64(2), nil)
@@ -90,14 +86,17 @@ func TestCategoryHandler_List(t *testing.T) {
 
 func TestCategoryHandler_Update(t *testing.T) {
 	r, mockRepo := setupTest(t)
+	factory := factory.NewCategoryFactory()
+	req := factory.BuildUpdateRequest()
+	expectedCategory := factory.BuildEntity(
+		factory.WithName(req.Name),
+		factory.WithSlug(req.Slug),
+	)
 
-	req := dto.UpdateCategoryRequest{
-		Name: "Updated Category",
-		Slug: "updated-category",
-	}
-
-	mockRepo.On("FindByID", uint(1), mock.Anything).Return(&entity.Category{ID: 1}, nil)
-	mockRepo.On("Update", mock.AnythingOfType("*entity.Category")).Return(nil)
+	mockRepo.On("FindByID", uint(1), mock.Anything).Return(expectedCategory, nil)
+	mockRepo.On("Update", mock.MatchedBy(func(c *entity.Category) bool {
+		return c.Name == expectedCategory.Name && c.Slug == expectedCategory.Slug
+	})).Return(nil)
 
 	body, _ := json.Marshal(req)
 	w := httptest.NewRecorder()

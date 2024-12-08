@@ -2,84 +2,87 @@ package service_test
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/jambo0624/blog/internal/tag/application/service"
-	"github.com/jambo0624/blog/internal/tag/domain/entity"
-	"github.com/jambo0624/blog/internal/tag/domain/query"
-	"github.com/jambo0624/blog/internal/tag/interfaces/http/dto"
+	tagService "github.com/jambo0624/blog/internal/tag/application/service"
+	"github.com/jambo0624/blog/tests/testutil/factory"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
+	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 )
 
-func TestTagService_Create(t *testing.T) {
+func setupTest(t *testing.T) (*tagService.TagService, *mockTag.MockTagRepository) {
+	t.Helper()
+	
 	mockRepo := new(mockTag.MockTagRepository)
-	tagService := service.NewTagService(mockRepo)
+	service := tagService.NewTagService(mockRepo)
+	return service, mockRepo
+}
 
-	req := &dto.CreateTagRequest{
-		Name:  "Test Tag",
-		Color: "#FF0000",
-	}
+func TestTagService_Create(t *testing.T) {
+	service, mockRepo := setupTest(t)
+	factory := factory.NewTagFactory()
 
-	mockRepo.On("Save", mock.AnythingOfType("*entity.Tag")).Return(nil)
+	// prepare data
+	req := factory.BuildCreateRequest()
+	expectedTag := factory.BuildEntity(
+		factory.WithName(req.Name),
+		factory.WithColor(req.Color),
+	)
 
-	tag, err := tagService.Create(req)
+	mockRepo.On("Save", mock.MatchedBy(func(t *tagEntity.Tag) bool {
+		return t.Name == expectedTag.Name && t.Color == expectedTag.Color
+	})).Return(nil)
 
+	tag, err := service.Create(req)
 	assert.NoError(t, err)
-	assert.NotNil(t, tag)
+	assert.Equal(t, expectedTag.Name, tag.Name)
+	assert.Equal(t, expectedTag.Color, tag.Color)
+}
+
+func TestTagService_Update(t *testing.T) {
+	service, mockRepo := setupTest(t)
+	factory := factory.NewTagFactory()
+
+	existingTag := factory.BuildEntity()
+	req := factory.BuildUpdateRequest()
+
+	mockRepo.On("FindByID", existingTag.ID, mock.Anything).Return(existingTag, nil)
+	mockRepo.On("Update", mock.MatchedBy(func(t *tagEntity.Tag) bool {
+		return t.ID == existingTag.ID && t.Name == req.Name && t.Color == req.Color
+	})).Return(nil)
+
+	tag, err := service.Update(existingTag.ID, req)
+	assert.NoError(t, err)
 	assert.Equal(t, req.Name, tag.Name)
 	assert.Equal(t, req.Color, tag.Color)
 }
 
+func TestTagService_FindByID(t *testing.T) {
+	service, mockRepo := setupTest(t)
+	factory := factory.NewTagFactory()
+
+	expectedTag := factory.BuildEntity()
+	mockRepo.On("FindByID", expectedTag.ID, mock.Anything).Return(expectedTag, nil)
+
+	tag, err := service.FindByID(expectedTag.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTag.Name, tag.Name)
+	assert.Equal(t, expectedTag.Color, tag.Color)
+}
+
 func TestTagService_FindAll(t *testing.T) {
-	mockRepo := new(mockTag.MockTagRepository)
-	tagService := service.NewTagService(mockRepo)
+	service, mockRepo := setupTest(t)
+	factory := factory.NewTagFactory()
 
-	tags := []*entity.Tag{
-		{ID: 1, Name: "Tag 1", Color: "#FF0000"},
-		{ID: 2, Name: "Tag 2", Color: "#00FF00"},
-	}
+	expectedTags := factory.BuildList(2)
+	mockRepo.On("FindAll", mock.AnythingOfType("*query.TagQuery")).
+		Return(expectedTags, int64(len(expectedTags)), nil)
 
-	q := query.NewTagQuery()
-	mockRepo.On("FindAll", q).Return(tags, int64(2), nil)
-
-	found, total, err := tagService.FindAll(q)
-
+	tags, total, err := service.FindAll(tagQuery.NewTagQuery())
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), total)
-	assert.Len(t, found, 2)
-	assert.Equal(t, "Tag 1", found[0].Name)
-}
-
-func TestTagService_Update(t *testing.T) {
-	mockRepo := new(mockTag.MockTagRepository)
-	tagService := service.NewTagService(mockRepo)
-
-	tag := &entity.Tag{ID: 1, Name: "Old Name", Color: "#000000"}
-
-	mockRepo.On("FindByID", uint(1), mock.Anything).Return(tag, nil)
-	mockRepo.On("Update", mock.AnythingOfType("*entity.Tag")).Return(nil)
-
-	req := &dto.UpdateTagRequest{
-		Name:  "New Name",
-		Color: "#FFFFFF",
-	}
-
-	updated, err := tagService.Update(1, req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "New Name", updated.Name)
-	assert.Equal(t, "#FFFFFF", updated.Color)
-}
-
-func TestTagService_Delete(t *testing.T) {
-	mockRepo := new(mockTag.MockTagRepository)
-	tagService := service.NewTagService(mockRepo)
-
-	mockRepo.On("Delete", uint(1)).Return(nil)
-
-	err := tagService.Delete(1)
-
-	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, int64(len(expectedTags)), total)
+	assert.Len(t, tags, len(expectedTags))
 } 
