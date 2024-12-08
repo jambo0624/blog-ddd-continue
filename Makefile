@@ -10,7 +10,7 @@ BINARY_NAME=blog-server
 MAIN_PATH=cmd/main.go
 
 # Build parameters
-BUILD_DIR=build
+BUILD_DIR=bin
 BINARY_UNIX=$(BUILD_DIR)/$(BINARY_NAME)_unix
 BINARY_WINDOWS=$(BUILD_DIR)/$(BINARY_NAME).exe
 
