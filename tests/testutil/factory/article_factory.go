@@ -34,6 +34,7 @@ func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) *arti
 	}
 
 	article := &articleEntity.Article{
+		ID:         uint(f.sequence),
 		CategoryID: category.ID,
 		Title:      fmt.Sprintf("Test Article %d", f.sequence),
 		Content:    fmt.Sprintf("Test Content %d", f.sequence),
