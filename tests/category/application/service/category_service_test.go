@@ -11,11 +11,19 @@ import (
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
-func TestCategoryService_Create(t *testing.T) {
+func setupTest(t *testing.T) (*mockCategory.MockCategoryRepository, *service.CategoryService, *factory.CategoryFactory) {
+	t.Helper()
+	
 	mockRepo := new(mockCategory.MockCategoryRepository)
 	categoryService := service.NewCategoryService(mockRepo)
-
 	factory := factory.NewCategoryFactory()
+
+	return mockRepo, categoryService, factory
+}
+
+func TestCategoryService_Create(t *testing.T) {
+	mockRepo, categoryService, factory := setupTest(t)
+
 	req := factory.BuildCreateRequest()
 
 	mockRepo.On("Save", mock.AnythingOfType("*entity.Category")).Return(nil)
@@ -29,10 +37,8 @@ func TestCategoryService_Create(t *testing.T) {
 }
 
 func TestCategoryService_FindAll(t *testing.T) {
-	mockRepo := new(mockCategory.MockCategoryRepository)
-	categoryService := service.NewCategoryService(mockRepo)
+	mockRepo, categoryService, factory := setupTest(t)
 
-	factory := factory.NewCategoryFactory()
 	expectedCategories := factory.BuildList(2)
 
 	q := query.NewCategoryQuery()
@@ -46,10 +52,8 @@ func TestCategoryService_FindAll(t *testing.T) {
 }
 
 func TestCategoryService_Update(t *testing.T) {
-	mockRepo := new(mockCategory.MockCategoryRepository)
-	categoryService := service.NewCategoryService(mockRepo)
+	mockRepo, categoryService, factory := setupTest(t)
 
-	factory := factory.NewCategoryFactory()
 	expectedCategory := factory.BuildEntity()
 
 	mockRepo.On("FindByID", uint(1), mock.Anything).Return(expectedCategory, nil)
@@ -65,8 +69,7 @@ func TestCategoryService_Update(t *testing.T) {
 }
 
 func TestCategoryService_Delete(t *testing.T) {
-	mockRepo := new(mockCategory.MockCategoryRepository)
-	categoryService := service.NewCategoryService(mockRepo)
+	mockRepo, categoryService, _ := setupTest(t)
 
 	mockRepo.On("Delete", uint(1)).Return(nil)
 

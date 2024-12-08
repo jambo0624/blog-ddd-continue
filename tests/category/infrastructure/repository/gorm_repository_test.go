@@ -5,17 +5,26 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jambo0624/blog/tests/testutil"
-	categoryRepo "github.com/jambo0624/blog/internal/category/infrastructure/repository"
+	categoryPersistence "github.com/jambo0624/blog/internal/category/infrastructure/repository"
+	categoryRepository "github.com/jambo0624/blog/internal/category/domain/repository"
 	categoryQuery "github.com/jambo0624/blog/internal/category/domain/query"
 	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
-func TestGormCategoryRepository_FindByID(t *testing.T) {
+func setupTest(t *testing.T) (*testutil.TestDB, func(), categoryRepository.CategoryRepository, *factory.CategoryFactory) {
+	t.Helper()
+	
 	testDB, cleanup := testutil.SetupTestDB(t)
-	defer cleanup()
+	repo := categoryPersistence.NewGormCategoryRepository(testDB.DB)
+	factory := factory.NewCategoryFactory()
 
-	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
+	return testDB, cleanup, repo, factory
+}
+
+func TestGormCategoryRepository_FindByID(t *testing.T) {
+	testDB, cleanup, repo, _ := setupTest(t)
+	defer cleanup()
 	category := testDB.Data.Categories[0]
 
 	found, err := repo.FindByID(category.ID)
@@ -24,10 +33,8 @@ func TestGormCategoryRepository_FindByID(t *testing.T) {
 }
 
 func TestGormCategoryRepository_FindAll(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
-
-	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
 
 	t.Run("with name filter", func(t *testing.T) {
 		q := categoryQuery.NewCategoryQuery()
@@ -42,11 +49,8 @@ func TestGormCategoryRepository_FindAll(t *testing.T) {
 }
 
 func TestGormCategoryRepository_Save(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	_, cleanup, repo, factory := setupTest(t)
 	defer cleanup()
-
-	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
-	factory := factory.NewCategoryFactory()
 
 	category := factory.BuildEntity()
 
@@ -60,10 +64,9 @@ func TestGormCategoryRepository_Save(t *testing.T) {
 }
 
 func TestGormCategoryRepository_Update(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
 	category := testDB.Data.Categories[0]
 
 	category.Name = "Updated Name"
@@ -76,10 +79,9 @@ func TestGormCategoryRepository_Update(t *testing.T) {
 }
 
 func TestGormCategoryRepository_Delete(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
-
-	repo := categoryRepo.NewGormCategoryRepository(testDB.DB)
+	
 	category := testDB.Data.Categories[0]
 
 	err := repo.Delete(category.ID)

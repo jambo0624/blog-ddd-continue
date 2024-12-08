@@ -5,18 +5,29 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jambo0624/blog/tests/testutil"
-	articleRepo "github.com/jambo0624/blog/internal/article/infrastructure/repository"
+	articlePersistence "github.com/jambo0624/blog/internal/article/infrastructure/repository"
+	articleRepository "github.com/jambo0624/blog/internal/article/domain/repository"
 	articleQuery "github.com/jambo0624/blog/internal/article/domain/query"
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
-	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
 )
 
-func TestGormArticleRepository_FindByID(t *testing.T) {
+func setupTest(t *testing.T) (*testutil.TestDB, func(), articleRepository.ArticleRepository, *factory.ArticleFactory) {
+	t.Helper()
+	
 	testDB, cleanup := testutil.SetupTestDB(t)
+	repo := articlePersistence.NewGormArticleRepository(testDB.DB)
+	categoryFactory := factory.NewCategoryFactory()
+	tagFactory := factory.NewTagFactory()
+	factory := factory.NewArticleFactory(categoryFactory, tagFactory)
+
+	return testDB, cleanup, repo, factory
+}
+
+func TestGormArticleRepository_FindByID(t *testing.T) {
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := articleRepo.NewGormArticleRepository(testDB.DB)
 	article := testDB.Data.Articles[0]
 
 	found, err := repo.FindByID(article.ID)
@@ -27,10 +38,8 @@ func TestGormArticleRepository_FindByID(t *testing.T) {
 }
 
 func TestGormArticleRepository_FindAll(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
-
-	repo := articleRepo.NewGormArticleRepository(testDB.DB)
 
 	t.Run("with category filter", func(t *testing.T) {
 		q := articleQuery.NewArticleQuery()
@@ -58,42 +67,40 @@ func TestGormArticleRepository_FindAll(t *testing.T) {
 }
 
 func TestGormArticleRepository_Save(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, factory := setupTest(t)
 	defer cleanup()
+	
+	// Build Entity, contains 2 tags
+	article, category, tag := factory.BuildEntity()
 
-	repo := articleRepo.NewGormArticleRepository(testDB.DB)
-	category := testDB.Data.Categories[0]
-	tag := testDB.Data.Tags[0]
-	categoryFactory := factory.NewCategoryFactory()
-	tagFactory := factory.NewTagFactory()
-	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
+	// Create Category
+	err := testDB.DB.Create(category).Error
+	assert.NoError(t, err)
 
-	article := articleFactory.BuildEntity(
-		func(a *articleEntity.Article) {
-			a.CategoryID = category.ID
-			a.Tags = []tagEntity.Tag{*tag}
-		},
-	)
+	// Create Tag
+	err = testDB.DB.Create(tag).Error
+	assert.NoError(t, err)
 
-	err := repo.Save(article)
+	// Save Article
+	err = repo.Save(article)
 	assert.NoError(t, err)
 	assert.NotZero(t, article.ID)
 
 	// Verify saved article
-	preloads := []string{"Tags"}
+	preloads := []string{"Tags", "Category"}
 	found, err := repo.FindByID(article.ID, preloads...)
 	assert.NoError(t, err)
 	assert.Equal(t, article.Title, found.Title)
 	assert.Equal(t, article.Content, found.Content)
-	assert.Len(t, found.Tags, 1)
+	assert.Equal(t, category.ID, found.CategoryID)
+	assert.Len(t, found.Tags, 2)
 	assert.Equal(t, tag.ID, found.Tags[0].ID)
 }
 
 func TestGormArticleRepository_Update(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := articleRepo.NewGormArticleRepository(testDB.DB)
 	article := testDB.Data.Articles[0]
 
 	article.Title = "Updated Title"
@@ -106,10 +113,9 @@ func TestGormArticleRepository_Update(t *testing.T) {
 }
 
 func TestGormArticleRepository_Delete(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := articleRepo.NewGormArticleRepository(testDB.DB)
 	article := testDB.Data.Articles[0]
 
 	err := repo.Delete(article.ID)

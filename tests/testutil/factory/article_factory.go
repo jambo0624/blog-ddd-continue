@@ -5,6 +5,7 @@ import (
 	articleEntity "github.com/jambo0624/blog/internal/article/domain/entity"
 	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
+	categoryEntity "github.com/jambo0624/blog/internal/category/domain/entity"
 )
 
 type ArticleFactory struct {
@@ -22,7 +23,7 @@ func NewArticleFactory(categoryFactory *CategoryFactory, tagFactory *TagFactory)
 }
 
 // BuildEntity creates an Article entity with default or custom values
-func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) *articleEntity.Article {
+func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) (*articleEntity.Article, *categoryEntity.Category, *tagEntity.Tag) {
 	f.sequence++
 	category := f.categoryFactory.BuildEntity()
 	tagPtrs := f.tagFactory.BuildList(2)
@@ -45,11 +46,11 @@ func (f *ArticleFactory) BuildEntity(opts ...func(*articleEntity.Article)) *arti
 		opt(article)
 	}
 
-	return article
+	return article, category, &tags[0]
 }
 
 // BuildCreateRequest creates a CreateArticleRequest
-func (f *ArticleFactory) BuildCreateRequest(opts ...func(*dto.CreateArticleRequest)) *dto.CreateArticleRequest {
+func (f *ArticleFactory) BuildCreateRequest(opts ...func(*dto.CreateArticleRequest)) (*dto.CreateArticleRequest, *categoryEntity.Category, *tagEntity.Tag) {
 	f.sequence++
 	category := f.categoryFactory.BuildEntity()
 	tags := f.tagFactory.BuildList(2)
@@ -70,11 +71,11 @@ func (f *ArticleFactory) BuildCreateRequest(opts ...func(*dto.CreateArticleReque
 		opt(req)
 	}
 
-	return req
+	return req, category, tags[0]
 }
 
 // BuildUpdateRequest creates an UpdateArticleRequest
-func (f *ArticleFactory) BuildUpdateRequest(opts ...func(*dto.UpdateArticleRequest)) *dto.UpdateArticleRequest {
+func (f *ArticleFactory) BuildUpdateRequest(opts ...func(*dto.UpdateArticleRequest)) (*dto.UpdateArticleRequest, *categoryEntity.Category, *tagEntity.Tag) {
 	f.sequence++
 	category := f.categoryFactory.BuildEntity()
 	tags := f.tagFactory.BuildList(2)
@@ -95,14 +96,14 @@ func (f *ArticleFactory) BuildUpdateRequest(opts ...func(*dto.UpdateArticleReque
 		opt(req)
 	}
 
-	return req
+	return req, category, tags[0]
 }
 
 // BuildList creates a list of Article entities
 func (f *ArticleFactory) BuildList(count int) []*articleEntity.Article {
 	articles := make([]*articleEntity.Article, count)
 	for i := 0; i < count; i++ {
-		articles[i] = f.BuildEntity()
+		articles[i], _, _ = f.BuildEntity()
 	}
 	return articles
 }

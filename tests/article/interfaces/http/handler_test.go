@@ -4,13 +4,13 @@ import (
 	"testing"
 	"net/http"
 	"github.com/stretchr/testify/mock"
+	"fmt"
 
 	articleHandler "github.com/jambo0624/blog/internal/article/interfaces/http"
 	articleService "github.com/jambo0624/blog/internal/article/application/service"
 	mockArticle "github.com/jambo0624/blog/tests/testutil/mock/article"
 	mockCategory "github.com/jambo0624/blog/tests/testutil/mock/category"
 	mockTag "github.com/jambo0624/blog/tests/testutil/mock/tag"
-	"github.com/jambo0624/blog/internal/article/interfaces/http/dto"
 	"github.com/jambo0624/blog/tests/testutil/factory"
 	"github.com/jambo0624/blog/tests/testutil"
 )
@@ -36,15 +36,10 @@ func TestArticleHandler_Create(t *testing.T) {
 	tagFactory := factory.NewTagFactory()
 	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
 
-	category := categoryFactory.BuildEntity()
-	tag := tagFactory.BuildEntity()
-	req := articleFactory.BuildCreateRequest(func(r *dto.CreateArticleRequest) {
-		r.CategoryID = category.ID
-		r.TagIDs = []uint{tag.ID}
-	})
+	req, category, tag := articleFactory.BuildCreateRequest()
 
-	mockCategoryRepo.On("FindByID", category.ID, mock.Anything).Return(category, nil)
-	mockTagRepo.On("FindByID", tag.ID, mock.Anything).Return(tag, nil)
+	mockCategoryRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(category, nil)
+	mockTagRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(tag, nil)
 	mockArticleRepo.On("Save", mock.AnythingOfType("*entity.Article")).Return(nil)
 
 	actor.
@@ -56,12 +51,12 @@ func TestArticleHandler_Create(t *testing.T) {
 func TestArticleHandler_GetByID(t *testing.T) {
 	actor, mockArticleRepo, _, _ := setupTest(t)
 	articleFactory := factory.NewArticleFactory(factory.NewCategoryFactory(), factory.NewTagFactory())
-	article := articleFactory.BuildEntity()
+	article, _, _ := articleFactory.BuildEntity()
 
 	mockArticleRepo.On("FindByID", article.ID, mock.Anything).Return(article, nil)
 
 	actor.
-		Get("/api/articles/3", nil).
+		Get(fmt.Sprintf("/api/articles/%d", article.ID), nil).
 		SeeStatus(http.StatusOK)
 }
 
@@ -85,23 +80,18 @@ func TestArticleHandler_Update(t *testing.T) {
 	tagFactory := factory.NewTagFactory()
 	articleFactory := factory.NewArticleFactory(categoryFactory, tagFactory)
 
-	category := categoryFactory.BuildEntity()
-	tag := tagFactory.BuildEntity()
-	article := articleFactory.BuildEntity()
+	article, _, _ := articleFactory.BuildEntity()
 
-	req := articleFactory.BuildUpdateRequest(func(r *dto.UpdateArticleRequest) {
-		r.CategoryID = category.ID
-		r.TagIDs = []uint{tag.ID}
-	})
+	req, category, tag := articleFactory.BuildUpdateRequest()
 
-	mockArticleRepo.On("FindByID", article.ID, mock.Anything).Return(article, nil)
-	mockCategoryRepo.On("FindByID", category.ID, mock.Anything).Return(category, nil)
-	mockTagRepo.On("FindByID", tag.ID, mock.Anything).Return(tag, nil)
+	mockArticleRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(article, nil)
+	mockCategoryRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(category, nil)
+	mockTagRepo.On("FindByID", mock.AnythingOfType("uint"), []string(nil)).Return(tag, nil)
 	mockArticleRepo.On("Update", mock.AnythingOfType("*entity.Article")).Return(nil)
 
 	actor.
 		WithJSONBody(req).
-		Put("/api/articles/3").
+		Put(fmt.Sprintf("/api/articles/%d", article.ID)).
 		SeeStatus(http.StatusOK)
 }
 

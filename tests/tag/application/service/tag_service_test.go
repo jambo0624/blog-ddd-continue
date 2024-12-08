@@ -13,17 +13,18 @@ import (
 	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 )
 
-func setupTest(t *testing.T) (*tagService.TagService, *mockTag.MockTagRepository) {
+func setupTest(t *testing.T) (*tagService.TagService, *mockTag.MockTagRepository, *factory.TagFactory) {
 	t.Helper()
 	
 	mockRepo := new(mockTag.MockTagRepository)
 	service := tagService.NewTagService(mockRepo)
-	return service, mockRepo
+	factory := factory.NewTagFactory()
+
+	return service, mockRepo, factory
 }
 
 func TestTagService_Create(t *testing.T) {
-	service, mockRepo := setupTest(t)
-	factory := factory.NewTagFactory()
+	service, mockRepo, factory := setupTest(t)
 
 	// prepare data
 	req := factory.BuildCreateRequest()
@@ -43,8 +44,7 @@ func TestTagService_Create(t *testing.T) {
 }
 
 func TestTagService_Update(t *testing.T) {
-	service, mockRepo := setupTest(t)
-	factory := factory.NewTagFactory()
+	service, mockRepo, factory := setupTest(t)
 
 	existingTag := factory.BuildEntity()
 	req := factory.BuildUpdateRequest()
@@ -61,8 +61,7 @@ func TestTagService_Update(t *testing.T) {
 }
 
 func TestTagService_FindByID(t *testing.T) {
-	service, mockRepo := setupTest(t)
-	factory := factory.NewTagFactory()
+	service, mockRepo, factory := setupTest(t)
 
 	expectedTag := factory.BuildEntity()
 	mockRepo.On("FindByID", expectedTag.ID, mock.Anything).Return(expectedTag, nil)
@@ -74,8 +73,7 @@ func TestTagService_FindByID(t *testing.T) {
 }
 
 func TestTagService_FindAll(t *testing.T) {
-	service, mockRepo := setupTest(t)
-	factory := factory.NewTagFactory()
+	service, mockRepo, factory := setupTest(t)
 
 	expectedTags := factory.BuildList(2)
 	mockRepo.On("FindAll", mock.AnythingOfType("*query.TagQuery")).

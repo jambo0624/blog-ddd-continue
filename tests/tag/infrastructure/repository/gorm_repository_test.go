@@ -5,17 +5,27 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jambo0624/blog/tests/testutil"
-	tagRepo "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
 	tagQuery "github.com/jambo0624/blog/internal/tag/domain/query"
 	tagEntity "github.com/jambo0624/blog/internal/tag/domain/entity"
 	factory "github.com/jambo0624/blog/tests/testutil/factory"
+	tagRepository "github.com/jambo0624/blog/internal/tag/domain/repository"
+	tagPersistence "github.com/jambo0624/blog/internal/tag/infrastructure/repository"
 )
 
-func TestGormTagRepository_FindByID(t *testing.T) {
+func setupTest(t *testing.T) (*testutil.TestDB, func(), tagRepository.TagRepository, *factory.TagFactory) {
+	t.Helper()
+	
 	testDB, cleanup := testutil.SetupTestDB(t)
+	repo := tagPersistence.NewGormTagRepository(testDB.DB)
+	factory := factory.NewTagFactory()
+
+	return testDB, cleanup, repo, factory
+}
+
+func TestGormTagRepository_FindByID(t *testing.T) {
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := tagRepo.NewGormTagRepository(testDB.DB)
 	tag := testDB.Data.Tags[0]
 
 	found, err := repo.FindByID(tag.ID)
@@ -25,10 +35,8 @@ func TestGormTagRepository_FindByID(t *testing.T) {
 }
 
 func TestGormTagRepository_FindAll(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
-
-	repo := tagRepo.NewGormTagRepository(testDB.DB)
 
 	t.Run("with name filter", func(t *testing.T) {
 		q := tagQuery.NewTagQuery()
@@ -43,11 +51,8 @@ func TestGormTagRepository_FindAll(t *testing.T) {
 }
 
 func TestGormTagRepository_Save(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	_, cleanup, repo, factory := setupTest(t)
 	defer cleanup()
-
-	repo := tagRepo.NewGormTagRepository(testDB.DB)
-	factory := factory.NewTagFactory()
 
 	tag := factory.BuildEntity()
 
@@ -62,10 +67,9 @@ func TestGormTagRepository_Save(t *testing.T) {
 }
 
 func TestGormTagRepository_Update(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := tagRepo.NewGormTagRepository(testDB.DB)
 	tag := testDB.Data.Tags[0]
 	tag.Name = "Updated Name"
 
@@ -78,10 +82,9 @@ func TestGormTagRepository_Update(t *testing.T) {
 }
 
 func TestGormTagRepository_Delete(t *testing.T) {
-	testDB, cleanup := testutil.SetupTestDB(t)
+	testDB, cleanup, repo, _ := setupTest(t)
 	defer cleanup()
 
-	repo := tagRepo.NewGormTagRepository(testDB.DB)
 	tag := testDB.Data.Tags[0]
 
 	err := repo.Delete(tag.ID)
